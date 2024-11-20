@@ -1,0 +1,371 @@
+package server;
+
+import data.BaseMsg;
+import data.GameMsg;
+import data.ChatMsg;
+
+import javax.swing.*;
+import java.io.*;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.*;
+
+public class GameServerService {
+    private int port; // 포트 번호
+    private ServerSocket serverSocket; // 서버 소켓
+    private Thread acceptThread = null; // 클라이언트 요청 수락 스레드
+
+    private Vector<ClientHandler> users = new Vector<>(); // 전체 참가자
+    private Map<String, Vector<ClientHandler>> roomMap = new HashMap<>(); // 게임방 참가자 관리 맵
+    private Map<String, Map<Integer, Integer>> teamCountMap = new HashMap<>(); // 팀별 인원 관리 맵
+    private JTextArea t_display;
+
+    public GameServerService(int port) {
+        this.port = port;
+    }
+
+    public void setDisplayArea(JTextArea t_display) {
+        this.t_display = t_display;
+    }
+
+    // 서버 시작 메서드
+    public void startServer() {
+        try {
+            serverSocket = new ServerSocket(port);
+            printDisplay("서버가 시작되었습니다: " + InetAddress.getLocalHost().getHostAddress());
+
+            acceptThread = new Thread(() -> {
+                while (acceptThread == Thread.currentThread()) {
+                    try {
+                        if (serverSocket.isClosed()) break; // 서버 소켓이 닫힌 경우 스레드 종료
+                        Socket clientSocket = serverSocket.accept();
+                        printDisplay("클라이언트가 연결되었습니다: " + clientSocket.getInetAddress().getHostAddress());
+
+                        ClientHandler clientHandler = new ClientHandler(clientSocket);
+                        clientHandler.start();
+
+                        synchronized (users) {
+                            users.add(clientHandler);
+                        }
+                        printDisplay("현재 참가자 수: " + users.size());
+                    } catch (IOException e) {
+                        if (!serverSocket.isClosed()) { // 서버 소켓이 닫히지 않았을 경우만 오류 출력
+                            printDisplay("클라이언트 연결 중 오류 발생: " + e.getMessage());
+                        }
+                    }
+                }
+            });
+            acceptThread.start();
+
+        } catch (IOException e) {
+            printDisplay("서버 시작 중 오류 발생: " + e.getMessage());
+        }
+    }
+
+    // 게임 방 입장 클라이언트 추가
+    private synchronized void addClientToRoom(String roomName, ClientHandler client) {
+        roomMap.computeIfAbsent(roomName, k -> new Vector<>()).add(client); // 게임방에 클라이언트 추가
+        teamCountMap.computeIfAbsent(roomName, k -> new HashMap<>()).merge(client.team, 1, Integer::sum); // 선택된 팀에 클라이언트 추가
+        printDisplay("[" + roomName + "] 참가자 수: " + roomMap.get(roomName).size());
+    }
+
+    // 퇴장 시 게임방에서 클라이언트 삭제
+    private synchronized void removeClientFromRoom(String roomName, ClientHandler client) {
+        Vector<ClientHandler> clients = roomMap.get(roomName);
+        if (clients != null) {
+            clients.remove(client);
+            if (clients.isEmpty()) {
+                roomMap.remove(roomName);
+                teamCountMap.remove(roomName);
+            } else {
+                teamCountMap.get(roomName).merge(client.team, -1, Integer::sum);
+            }
+        }
+    }
+
+    // 같은 방의 유저들에게 ChatMsg 브로드캐스트
+    private synchronized void broadcastToRoom(String roomName, ChatMsg chatMsg) {
+        Vector<ClientHandler> clients = roomMap.get(roomName);
+        if (clients != null) {
+            for (ClientHandler client : clients) {
+                client.send(chatMsg);
+            }
+        }
+    }
+
+    // 같은 방의 유저들에게 GameMsg 브로드캐스트
+    private synchronized void broadcastToRoom(String roomName, GameMsg gameMsg) {
+        Vector<ClientHandler> clients = roomMap.get(roomName);
+        if (clients != null) {
+            for (ClientHandler client : clients) {
+                client.send(gameMsg);
+            }
+        }
+    }
+
+    // 서버 화면에 출력
+    private void printDisplay(String msg) {
+        if (t_display != null) {
+            t_display.append(msg + "\n");
+            t_display.setCaretPosition(t_display.getDocument().getLength());
+        }
+    }
+
+    // 서버 연결 해제
+    void serverDisconnect() {
+        /* 소켓 닫기 */
+        try{
+            acceptThread = null;
+            if(serverSocket!=null) {
+                serverSocket.close();
+                printDisplay("서버 종료");
+                System.exit(-1);
+            }
+
+        } catch (IOException e){
+            System.err.println("서버 닫기 오류> "+e.getMessage());
+        }
+    }
+
+    // 클라인터트 핸들러
+    private class ClientHandler extends Thread {
+        private Socket clientSocket;
+        private ObjectOutputStream out; // 출력 객체
+        private ObjectInputStream in; // 입력 객체
+        private String roomName; // 방 이름
+        private String nickName; // 닉네임
+        private int team; // 팀 (1,2)
+        private int gameMode; // 게임모드 (1대1 모드이면 1, 2대2 모드이면 2)
+        private String characterName; // 선택한 캐릭터 이름
+
+        public ClientHandler(Socket clientSocket) {
+            this.clientSocket = clientSocket;
+        }
+
+        @Override
+        public void run() {
+            receiveMessages();
+        }
+
+        // 클라이언트로부터 받은 메시지 관리
+        private void receiveMessages() {
+            try {
+                out = new ObjectOutputStream(new BufferedOutputStream(clientSocket.getOutputStream()));
+                out.flush();
+                in = new ObjectInputStream(new BufferedInputStream(clientSocket.getInputStream()));
+
+                BaseMsg msg;
+
+                while ((msg = (BaseMsg) in.readObject()) != null) {
+                    // 채팅 메시지 & 게임 시작 전 메시지
+                    if (msg instanceof ChatMsg chatMsg) {
+                        switch (chatMsg.getCode()) {
+                            case "LOGIN" -> handleLogin(chatMsg); // 로그인
+                            case "LOGOUT" -> handleLogout(chatMsg); // 로그아웃
+                            case "TX_STRING" -> handleTextMessage(chatMsg); // 스트링 메시지 (채팅)
+                            case "TX_IMAGE" -> handleImageMessage(chatMsg); // 이미지 (채팅)
+                            case "TX_FILE" -> handleFileMessage(chatMsg); // 파일 (채팅)
+                            case "JOIN_ROOM" -> handleJoinRoom(chatMsg); // 게임방 입장
+                            case "START_GAME" ->checkStartCondition(); // 게임 시작
+                            default -> printDisplay("알 수 없는 메시지 유형: " + chatMsg.getCode());
+                        }
+                    }
+
+                    // 게임 시작 이후 데이터
+                    else if (msg instanceof GameMsg gameMsg) {
+                        handleGameMsg(gameMsg);
+                    }
+                }
+            } catch (ClassNotFoundException | IOException e) {
+                printDisplay("서버 수신 오류: " + e.getMessage());
+                System.err.println("서버 수신 오류: " + e.getMessage());
+            } finally {
+                // 유저 삭제
+                removeClientFromRoom(roomName, this);
+                closeResources();
+            }
+        }
+
+        // LOGIN 메시지 수신 시 처리
+        private void handleLogin(ChatMsg msg) {
+            nickName = msg.getNickname();
+            roomName = msg.getRoomName();
+            team = msg.getTeam();
+            gameMode = msg.getGameMode();
+            characterName = msg.getCharacter();
+
+            System.out.println("닉네임: "+ nickName +", 캐릭터: "+characterName);
+
+            printDisplay("[" + roomName + "] 새 참가자: " + nickName + " (팀: " + team + ")");
+        }
+
+        // LOGOUT 로그아웃
+        private void handleLogout(ChatMsg msg) {
+            printDisplay("[" + roomName + "] " + nickName + " 로그아웃");
+        }
+
+        // 클라이언트로부터 받은 텍스트 메시지 반향
+        // code: TX_STRING
+        private void handleTextMessage(ChatMsg msg) {
+            String message = "[" + roomName + "] " + nickName + ": " + msg.getMessage();
+            printDisplay(message);
+
+            // 같은 방 참가자에게 메시지 브로드캐스트
+            broadcastToRoom(roomName, msg);
+        }
+
+        // 클라이언트로부터 받은 이미지 반향
+        // code: TX_IMAGE
+        private void handleImageMessage(ChatMsg msg) {
+            printDisplay("[" + roomName + "] " + nickName + " (이미지 전송): " + msg.getImage());
+            broadcastToRoom(roomName, msg);
+        }
+
+        // 클라이언트로부터 받은 파일 반향
+        // code: TX_FILE
+        private void handleFileMessage(ChatMsg msg) {
+            String fileName = msg.getMessage();
+            printDisplay("파일 수신 시작: " + fileName + " (" + msg.getFileSize() + " bytes)");
+
+            try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(fileName))) {
+                byte[] buffer = new byte[1024];
+                long remaining = msg.getFileSize();
+                int nRead;
+
+                while (remaining > 0 && (nRead = in.read(buffer, 0, (int) Math.min(buffer.length, remaining))) != -1) {
+                    bos.write(buffer, 0, nRead);
+                    remaining -= nRead;
+                }
+                bos.flush();
+                printDisplay("파일 수신 완료: " + fileName);
+            } catch (IOException e) {
+                printDisplay("파일 저장 오류: " + e.getMessage());
+            }
+        }
+
+        // 게임 대기방 입장
+        private void handleJoinRoom(ChatMsg msg) {
+            roomName = msg.getRoomName();
+            gameMode = msg.getGameMode();
+            team = msg.getTeam();
+            characterName = msg.getNickname();
+            nickName = msg.getNickname();
+
+            addClientToRoom(roomName, this); // 같은 이름의 게임방에 클라이언트 충가
+            checkStartCondition(); // 게임이 시작 가능한지 체크
+        }
+
+        // 게임 시작이 가능한지 체크
+        private void checkStartCondition() {
+            Vector<ClientHandler> roomUsers = roomMap.get(roomName); // 같은 방 유저들
+            Map<Integer, Integer> teamCounts = teamCountMap.get(roomName); // 같은 방, 같은 팀 유저들
+
+            if (gameMode == 1) { // 1대1 모드: 같은 방에 두 명이 있으면 게임 시작
+                if (roomUsers.size() == 2) { // 1대1 모드 시 같은 방의 유저가 두 명이면 게임 시작
+                    startGameForRoom(roomUsers);
+                } else {
+                    sendWaitingMessage(); // 게임 대기
+                }
+            } else if (gameMode == 2) { // 2대2 모드: 팀별로 두 명씩 있으면 게임 시작
+                if (teamCounts.getOrDefault(1, 0) == 2 && teamCounts.getOrDefault(2, 0) == 2) {
+                    startGameForRoom(roomUsers);
+                } else {
+                    sendWaitingMessage();  // 게임 대기
+                }
+            }
+        }
+
+        // 대기방 입장 후 게임이 시작할 수 있는 상태가 아니면 클라이언트에게 대기 메시지 반향
+        // code: WAITING
+        private void sendWaitingMessage() {
+            try {
+                // ChatMsg 객체 생성
+                ChatMsg chatMsg = new ChatMsg.Builder("WAITING")
+                        .room(roomName)
+                        .gameMode(gameMode)
+                        .team(team)
+                        .nickname(nickName)
+                        .character(characterName)
+                        .image(null)
+                        .fileName(null)
+                        .fileSize(0)
+                        .build(); // 빌더 패턴에서 객체 생성
+
+                out.writeObject(chatMsg);
+                out.flush();
+            } catch (IOException e) {
+                printDisplay("대기 메시지 전송 오류: " + e.getMessage());
+            }
+        }
+
+
+        // 게임이 가능한 모든 유저들에게 게임 시작 메시지 전송
+        // code: START_GAME
+        private void startGameForRoom(Vector<ClientHandler> roomUsers) {
+            for (ClientHandler user : roomUsers) {
+                try {
+
+                    // ChatMsg 객체 생성
+                    ChatMsg chatMsg = new ChatMsg.Builder("START_GAME")
+                            .room(user.roomName)
+                            .gameMode(user.gameMode)
+                            .team(user.team)
+                            .nickname(user.nickName)
+                            .character(user.characterName)
+                            .image(null)
+                            .fileName(null)
+                            .fileSize(0)
+                            .build(); // 빌더 패턴에서 객체 생성
+
+                    user.out.writeObject(chatMsg);
+                    user.out.reset(); // 참조 테이블 초기화
+                    user.out.flush();
+                } catch (IOException e) {
+                    printDisplay("START_GAME 게임 시작 메시지 전송 오류: " + e.getMessage());
+                }
+            }
+            printDisplay("[" + roomName + "] 게임 시작!");
+        }
+
+        // 클라이언트로부터 받은 GameMsg 객체를 같은 방의 유저들에게 전송
+        // code: JUMP, MOVE
+        private void handleGameMsg(GameMsg msg) {
+            broadcastToRoom(msg.getRoomName(), msg);
+        }
+
+        // 서버 -> 클라이언트로 ChatMsg 전송
+        private void send(ChatMsg msg) {
+            try {
+                out.writeObject(msg);
+                out.reset(); // 참조 테이블 초기
+                out.flush();
+            } catch (IOException e) {
+                printDisplay("ChatMsg 메시지 전송 실패: " + e.getMessage());
+            }
+        }
+
+        // 서버 -> 클라이언트로 GameMsg 전송
+        private void send(GameMsg msg) {
+            try {
+                out.writeObject(msg);
+                out.reset(); // 참조 테이블 초기
+                out.flush();
+            } catch (IOException e) {
+                printDisplay("GameMsg 메시지 전송 실패: " + e.getMessage());
+            }
+        }
+
+        // 스트림, 클라이언트 소켓 닫기
+        private void closeResources() {
+            try {
+                if (in != null) in.close();
+                if (out != null) out.close();
+                if (clientSocket != null) clientSocket.close();
+            } catch (IOException e) {
+                printDisplay("자원 해제 실패: " + e.getMessage());
+                System.err.println("자원 해제 실패: " + e.getMessage());
+            }
+        }
+    }
+}
