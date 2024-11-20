@@ -160,9 +160,10 @@ public class MainFrameBuilder extends JFrame{
         blueCharacter3 = new JButton("blue3");
 
         //Todo : 나머지 캐릭터 이미지 찾고 버튼대신 추가하기
-        bluePanel.add(new JLabel(new ImageIcon("./src/resource/blue1.png")));
+        bluePanel.add(new JLabel(new ImageIcon("src/image/character/water.png")));
+        bluePanel.add(new JLabel(new ImageIcon("src/image/character/wade.png")));
 //        bluePanel.add(blueCharacter1);
-        bluePanel.add(blueCharacter2);
+//        bluePanel.add(blueCharacter2);
         bluePanel.add(blueCharacter3);
 
         // Red 캐릭터 선택
@@ -173,9 +174,10 @@ public class MainFrameBuilder extends JFrame{
         redCharacter3 = new JButton("red3");
 
         //Todo : 나머지 캐릭터 이미지 찾고 버튼대신 추가하기
-        redPanel.add(new JLabel(new ImageIcon("./src/resource/red1.png")));
+        redPanel.add(new JLabel(new ImageIcon("src/image/character/fire.png")));
+        redPanel.add(new JLabel(new ImageIcon("src/image/character/ember.png")));
 //        redPanel.add(redCharacter1);
-        redPanel.add(redCharacter2);
+//        redPanel.add(redCharacter2);
         redPanel.add(redCharacter3);
 
         characterPanel.add(bluePanel);
