@@ -1,7 +1,9 @@
 ### IntelliJ IDEA ###
 out/
-!**/src/main/**/out/
-!**/src/test/**/out/
+**/out/
+# Remove specific exclusions for src/main and src/test
+# !**/src/main/**/out/
+# !**/src/test/**/out/
 
 ### Eclipse ###
 .apt_generated
