@@ -3,11 +3,11 @@ package server;
 import javax.swing.*;
 import java.awt.*;
 
-public class GameServerTest extends JFrame {
+public class GameServer extends JFrame {
     private GameServerService serverService; // 서버 로직
     private ServerPanel serverPanel; // 서버 패널
 
-    public GameServerTest(int port) {
+    public GameServer(int port) {
         super("Game Server");
 
         serverService = new GameServerService(port);
@@ -29,6 +29,6 @@ public class GameServerTest extends JFrame {
 
     public static void main(String[] args) {
         int port = 54321;
-        new GameServerTest(port);
+        new GameServer(port);
     }
 }

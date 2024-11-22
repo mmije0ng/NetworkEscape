@@ -1,4 +1,4 @@
-package client;
+package client.FrameBuilder;
 
 import data.GameMsg;
 
@@ -409,7 +409,7 @@ public class GamePanel extends JPanel {
         if (out != null) {
             try {
                 GameMsg gameMsg = new GameMsg.Builder(action)
-                        .room(roomName)
+                        .roomName(roomName)
                         .gameMode(mode)
                         .team(team)
                         .nickname(nickName)

@@ -8,6 +8,7 @@ public abstract class BaseMsg implements Serializable {
 
     private final String code;       // 메시지 유형
     private final String roomName;       // 게임방 이름
+    private final String password;
     private final Integer gameMode;  // 게임 모드 (1대1, 2대2)
     private final String nickname;   // 닉네임
     private final Integer team;      // 팀1, 팀2
@@ -17,7 +18,8 @@ public abstract class BaseMsg implements Serializable {
     // protected 생성자 (빌더에서만 호출 가능)
     protected BaseMsg(Builder<?> builder) {
         this.code = builder.code;
-        this.roomName = builder.room;
+        this.password=builder.password;
+        this.roomName = builder.roomName;
         this.gameMode = builder.gameMode;
         this.nickname = builder.nickname;
         this.team = builder.team;
@@ -32,6 +34,9 @@ public abstract class BaseMsg implements Serializable {
 
     public String getRoomName() {
         return roomName;
+    }
+    public String getPassword(){
+        return password;
     }
 
     public Integer getGameMode() {
@@ -57,7 +62,8 @@ public abstract class BaseMsg implements Serializable {
     // 빌더 클래스 (제네릭)
     public abstract static class Builder<T extends Builder<T>> {
         private final String code;
-        private String room;
+        private String roomName;
+        private String password;
         private Integer gameMode;
         private String nickname;
         private Integer team;
@@ -68,13 +74,17 @@ public abstract class BaseMsg implements Serializable {
             this.code = code;
         }
 
-        public T room(String room) {
-            this.room = room;
+        public T roomName(String roomName) {
+            this.roomName = roomName;
             return self();
         }
 
         public T gameMode(Integer gameMode) {
             this.gameMode = gameMode;
+            return self();
+        }
+        public T password(String password){
+            this.password=password;
             return self();
         }
 
