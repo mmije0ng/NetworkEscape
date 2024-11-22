@@ -1,5 +1,11 @@
 package client;
 
+import client.FrameBuilder.GamePanel;
+import client.FrameBuilder.RoomPanel;
+import client.FrameBuilder.LoginFrameBuilder;
+import client.FrameBuilder.MainFrameBuilder;
+import client.service.GameClientService;
+import com.sun.tools.javac.Main;
 import data.ChatMsg;
 
 import javax.swing.*;
@@ -9,7 +15,9 @@ import java.awt.*;
 
 public class GameClientTest extends JFrame {
     private GameClientService gameClientService;
-    private GameStartPanel gameStartPanel;
+    private RoomPanel roomPanel;
+    private LoginFrameBuilder loginFrameBuilder;
+    private MainFrameBuilder mainFrameBuilder;
     private GamePanel gamePanel;
     private JTextPane t_display;
     private DefaultStyledDocument document;
@@ -18,7 +26,10 @@ public class GameClientTest extends JFrame {
         super("Network Escape");
 
         gameClientService = new GameClientService(this, serverAddress, serverPort);
-        gameStartPanel = new GameStartPanel(gameClientService);
+//        gameStartPanel = new GameStartPanel(gameClientService);
+        loginFrameBuilder = new LoginFrameBuilder(gameClientService, serverAddress, serverPort);
+        roomPanel = new RoomPanel(gameClientService, new ChatMsg.Builder("").build());
+        mainFrameBuilder = new MainFrameBuilder(gameClientService, "");
 
         buildGUI();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -34,20 +45,16 @@ public class GameClientTest extends JFrame {
         t_display = new JTextPane(document);
         t_display.setEditable(false);
 
-        add(new JScrollPane(t_display), BorderLayout.CENTER);
-        add(gameStartPanel, BorderLayout.SOUTH);
+        add(loginFrameBuilder,BorderLayout.CENTER);
+//        add(new JScrollPane(t_display), BorderLayout.CENTER);
+//        add(gameStartPanel, BorderLayout.SOUTH);
     }
 
-    // 텍스트 메시지 출력
-    public void printDisplay(String msg) {
-        try {
-            int len = t_display.getDocument().getLength();
-            document.insertString(len, msg + "\n", null);
-            t_display.setCaretPosition(len);
-        } catch (BadLocationException e) {
-            e.printStackTrace();
-        }
+    public void printRoom(ChatMsg msg){
+        mainFrameBuilder.printLobbyList(msg.getRoomName());
     }
+    // 텍스트 메시지 출력
+
 
     // 이미지 메시지 출력
     public void printDisplay(ImageIcon icon) {
@@ -60,10 +67,48 @@ public class GameClientTest extends JFrame {
         printDisplay("");
     }
 
+    public void printDisplay(String msg) {
+        try {
+            int len = t_display.getDocument().getLength();
+            document.insertString(len, msg + "\n", null);
+            t_display.setCaretPosition(len);
+        } catch (BadLocationException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void startMainPanel(GameClientService service, ChatMsg msg){
+        getContentPane().removeAll();
+
+        mainFrameBuilder = new MainFrameBuilder(service,msg.getNickname());
+        add(mainFrameBuilder);
+        mainFrameBuilder.setVisible(true);
+        mainFrameBuilder.requestFocusInWindow();
+
+        revalidate();
+        repaint();
+
+    }
+
+    public void startRoomPanel(GameClientService service, ChatMsg msg){
+
+        getContentPane().removeAll();
+        add(t_display,BorderLayout.CENTER);
+
+        roomPanel = new RoomPanel(service,msg);
+        add(roomPanel,BorderLayout.SOUTH);
+
+        roomPanel.requestFocusInWindow();
+
+        revalidate();
+        repaint();
+
+    }
+
    // 게임 시작 패널 -> 게임 패널로 전환
     public void startGamePanel(ChatMsg msg) {
-        remove(gameStartPanel);
 
+        getContentPane().removeAll();
         gamePanel = new GamePanel(
                 msg.getNickname(),
                 msg.getCharacter(),

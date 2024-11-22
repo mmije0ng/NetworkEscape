@@ -1,4 +1,6 @@
-package FrameBuilder;
+package client.FrameBuilder;
+
+import client.service.GameClientService;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
@@ -8,7 +10,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 
-public class MainFrameBuilder extends JFrame{
+public class MainFrameBuilder extends JPanel{
     public JTextField t_lobbyName,t_lobbyPassword;
     public JTextArea t_lobbyList;
     public JButton b_playMode1, b_playMode2, b_createLobby,b_searchLobby,b_enterLobby;
@@ -16,8 +18,18 @@ public class MainFrameBuilder extends JFrame{
     public JButton blueCharacter1,blueCharacter2,blueCharacter3;
     public JButton redCharacter1,redCharacter2,redCharacter3;
     private DefaultStyledDocument document;
+    private GameClientService service;
+
+    private int playmode;
+    private String userName;
+
+    public MainFrameBuilder(GameClientService service, String username){
+        this.service = service;
+        this.userName=username;
+        buildGUI(username);
+    }
     public void buildGUI(String userName){
-        this.setTitle("미로 대탈출 로비");
+
         this.setBounds(0,0,500,500);
         this.setLayout(new GridLayout(1,2));
 
@@ -28,7 +40,7 @@ public class MainFrameBuilder extends JFrame{
         this.add(LobbyPanel);
         this.add(UserPanel);
 
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
         this.setVisible(true);
     }
     private JPanel createLobbyPanel(){
@@ -86,6 +98,8 @@ public class MainFrameBuilder extends JFrame{
             public void actionPerformed(ActionEvent e) {
                 b_playMode1.setEnabled(false);
                 b_playMode2.setEnabled(true);
+                playmode=1;
+
             }
         });
         b_playMode2.addActionListener(new ActionListener() {
@@ -93,6 +107,7 @@ public class MainFrameBuilder extends JFrame{
             public void actionPerformed(ActionEvent e) {
                 b_playMode1.setEnabled(true);
                 b_playMode2.setEnabled(false);
+                playmode=2;
             }
         });
         modePanel.add(b_playMode1);
@@ -109,6 +124,15 @@ public class MainFrameBuilder extends JFrame{
         b_createLobby = new JButton("방 생성");
         b_createLobby.setBackground(Color.ORANGE);
 
+        b_createLobby.addActionListener(e->service.createRoom(
+                userName,
+                t_lobbyName.getText(),
+                t_lobbyPassword.getText(),
+                "방장 캐릭",
+                playmode,
+                1
+        ));
+
         topPanel.add(b_createLobby, gbc);
 
         gbc.gridy = 4;
@@ -117,6 +141,13 @@ public class MainFrameBuilder extends JFrame{
 
         gbc.gridy = 5;
         b_enterLobby = new JButton("방 참가");
+
+        b_enterLobby.addActionListener(e -> service.enterRoom(
+                userName,
+                t_lobbyName.getText(),
+                t_lobbyPassword.getText(),
+                "참가자 캐릭"
+        ));
         topPanel.add(b_enterLobby, gbc);
 
         panel.add(topPanel);
