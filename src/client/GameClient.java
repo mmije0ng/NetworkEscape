@@ -5,7 +5,6 @@ import client.FrameBuilder.RoomPanel;
 import client.FrameBuilder.LoginFrameBuilder;
 import client.FrameBuilder.MainFrameBuilder;
 import client.service.GameClientService;
-import com.sun.tools.javac.Main;
 import data.ChatMsg;
 
 import javax.swing.*;
@@ -13,8 +12,9 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
 import java.awt.*;
 
-public class GameClientTest extends JFrame {
+public class GameClient extends JFrame {
     private GameClientService gameClientService;
+
     private RoomPanel roomPanel;
     private LoginFrameBuilder loginFrameBuilder;
     private MainFrameBuilder mainFrameBuilder;
@@ -22,7 +22,7 @@ public class GameClientTest extends JFrame {
     private JTextPane t_display;
     private DefaultStyledDocument document;
 
-    public GameClientTest(String serverAddress, int serverPort) {
+    public GameClient(String serverAddress, int serverPort) {
         super("Network Escape");
 
         gameClientService = new GameClientService(this, serverAddress, serverPort);
@@ -77,6 +77,16 @@ public class GameClientTest extends JFrame {
         }
     }
 
+    public void printDisplayWithRoom(String msg) {
+        try {
+            int len = t_display.getDocument().getLength();
+            document.insertString(len, msg + "\n", null);
+            t_display.setCaretPosition(len);
+        } catch (BadLocationException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void startMainPanel(GameClientService service, ChatMsg msg){
         getContentPane().removeAll();
 
@@ -103,6 +113,7 @@ public class GameClientTest extends JFrame {
         revalidate();
         repaint();
 
+        System.out.println("startRoomPanel msg code: "+msg.getCode()+", characterName: "+msg.getCharacter());
     }
 
    // 게임 시작 패널 -> 게임 패널로 전환
@@ -134,6 +145,6 @@ public class GameClientTest extends JFrame {
     public static void main(String[] args) {
         String serverAddress = "localhost";
         int serverPort = 54321;
-        new GameClientTest(serverAddress, serverPort);
+        new GameClient(serverAddress, serverPort);
     }
 }

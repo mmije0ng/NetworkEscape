@@ -1,6 +1,5 @@
 package client.FrameBuilder;
 
-import client.GameClientTest;
 import client.service.GameClientService;
 
 import javax.swing.*;

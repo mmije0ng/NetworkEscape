@@ -23,6 +23,9 @@ public class MainFrameBuilder extends JPanel{
     private int playmode;
     private String userName;
 
+    private String selectedCharacter; // 선택된 캐릭터 이름
+
+
     public MainFrameBuilder(GameClientService service, String username){
         this.service = service;
         this.userName=username;
@@ -128,9 +131,8 @@ public class MainFrameBuilder extends JPanel{
                 userName,
                 t_lobbyName.getText(),
                 t_lobbyPassword.getText(),
-                "방장 캐릭",
-                playmode,
-                1
+                selectedCharacter,
+                playmode
         ));
 
         topPanel.add(b_createLobby, gbc);
@@ -146,13 +148,14 @@ public class MainFrameBuilder extends JPanel{
                 userName,
                 t_lobbyName.getText(),
                 t_lobbyPassword.getText(),
-                "참가자 캐릭"
+                selectedCharacter,
+                playmode
         ));
         topPanel.add(b_enterLobby, gbc);
 
         panel.add(topPanel);
         panel.add(bottomPanel);
-        
+
         return panel;
     }
 
@@ -186,29 +189,25 @@ public class MainFrameBuilder extends JPanel{
         // Blue 캐릭터 선택
         JPanel bluePanel = new JPanel(new GridLayout(3, 1));
         bluePanel.setBorder(BorderFactory.createLineBorder(Color.BLUE));
-        blueCharacter1 = new JButton("blue1");
-        blueCharacter2 = new JButton("blue2");
-        blueCharacter3 = new JButton("blue3");
 
-        //Todo : 나머지 캐릭터 이미지 찾고 버튼대신 추가하기
-        bluePanel.add(new JLabel(new ImageIcon("src/image/character/water.png")));
-        bluePanel.add(new JLabel(new ImageIcon("src/image/character/wade.png")));
-//        bluePanel.add(blueCharacter1);
-//        bluePanel.add(blueCharacter2);
+        JButton blueCharacter1 = createCharacterButton("src/image/character/water.png", "water");
+        JButton blueCharacter2 = createCharacterButton("src/image/character/wade.png", "wade");
+        JButton blueCharacter3 = createCharacterButton("src/image/character/blue3.png", "blue3");
+
+        bluePanel.add(blueCharacter1);
+        bluePanel.add(blueCharacter2);
         bluePanel.add(blueCharacter3);
 
         // Red 캐릭터 선택
         JPanel redPanel = new JPanel(new GridLayout(3, 1));
         redPanel.setBorder(BorderFactory.createLineBorder(Color.RED));
-        redCharacter1 = new JButton("red1");
-        redCharacter2 = new JButton("red2");
-        redCharacter3 = new JButton("red3");
 
-        //Todo : 나머지 캐릭터 이미지 찾고 버튼대신 추가하기
-        redPanel.add(new JLabel(new ImageIcon("src/image/character/fire.png")));
-        redPanel.add(new JLabel(new ImageIcon("src/image/character/ember.png")));
-//        redPanel.add(redCharacter1);
-//        redPanel.add(redCharacter2);
+        JButton redCharacter1 = createCharacterButton("src/image/character/fire.png", "fire");
+        JButton redCharacter2 = createCharacterButton("src/image/character/ember.png", "ember");
+        JButton redCharacter3 = createCharacterButton("src/image/character/red3.png", "red3");
+
+        redPanel.add(redCharacter1);
+        redPanel.add(redCharacter2);
         redPanel.add(redCharacter3);
 
         characterPanel.add(bluePanel);
@@ -216,6 +215,34 @@ public class MainFrameBuilder extends JPanel{
         panel.add(characterPanel, BorderLayout.CENTER);
 
         return panel;
+    }
+
+    // 버튼을 눌러 선택된 캐릭터의 이름 가져오기
+    private JButton createCharacterButton(String imagePath, String characterName) {
+        JButton button = new JButton();
+        button.setActionCommand(characterName); // 캐릭터 이름 설정
+
+        // 버튼 크기
+        int buttonWidth = 100;
+        int buttonHeight = 100;
+
+        // 이미지 로드 및 크기 조정
+        ImageIcon originalIcon = new ImageIcon(imagePath);
+        Image scaledImage = originalIcon.getImage().getScaledInstance(
+                buttonWidth, buttonHeight, Image.SCALE_SMOOTH // 부드러운 스케일링
+        );
+        ImageIcon scaledIcon = new ImageIcon(scaledImage);
+
+        button.setIcon(scaledIcon); // 버튼에 이미지 설정
+        button.setPreferredSize(new Dimension(buttonWidth, buttonHeight)); // 버튼 크기 설정
+
+        // 버튼 클릭 이벤트
+        button.addActionListener(e -> {
+            System.out.println("선택된 캐릭터: " + e.getActionCommand());
+            selectedCharacter = e.getActionCommand(); // 선택된 캐릭터 이름 저장
+        });
+
+        return button;
     }
 
     public void printLobbyList(String lobbyName){
