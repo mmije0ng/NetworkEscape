@@ -107,8 +107,17 @@ public class GameServerService {
     }
 
     // 같은 방의 유저들에게 ChatMsg 브로드캐스트
-    // 2대2 모드 시 같은 방, 같은 팀 유저에게만 ChatMsg 브로드캐스트
     private synchronized void broadcastToRoom(String roomName, ChatMsg chatMsg) {
+        Vector<ClientHandler> clients = roomMap.get(roomName);
+        if (clients == null) return; // 방이 존재하지 않으면 종료
+
+        for (ClientHandler client : clients) {
+            client.send(chatMsg);
+        }
+    }
+
+    // 2대2 모드 시 같은 방, 같은 팀 유저에게만 ChatMsg 브로드캐스트
+    private synchronized void broadcastToRoomForChat(String roomName, ChatMsg chatMsg) {
         Vector<ClientHandler> clients = roomMap.get(roomName);
         if (clients == null) return; // 방이 존재하지 않으면 종료
 
@@ -282,6 +291,7 @@ public class GameServerService {
                     .character(characterName)
                     .roomName(roomName)
                     .password(password)
+                    .textMessage("["+msg.getRoomName()+"] 의 새로운 참가자 입장, 닉네임: "+msg.getNickname()+" 캐릭터: "+msg.getCharacter())
                     .build()
             );
             rooms.add(roomName);
@@ -326,6 +336,7 @@ public class GameServerService {
                             .roomName(roomName)
                             .team(team)
                             .password(password)
+                            .textMessage("["+msg.getRoomName()+"] 의 새로운 참가자 입장, 닉네임: "+msg.getNickname()+" 캐릭터: "+msg.getCharacter())
                             .build();
 
 //                    send(chatMsg);
@@ -368,8 +379,8 @@ public class GameServerService {
             String message = "[" + roomName + "] " + nickName + ": " + msg.getTextMessage();
             printDisplay(message);
 
-            // 같은 방 참가자에게 메시지 브로드캐스트
-            broadcastToRoom(roomName, msg);
+            // 2대2 모드시 같은 팀 유저에게만 브로드캐스트
+            broadcastToRoomForChat(msg.getRoomName(), msg);
         }
 
         // 클라이언트로부터 받은 이미지 반향
@@ -388,8 +399,8 @@ public class GameServerService {
             System.out.println("서버 imageIcon: "+imageIcon.getImage().toString());
 
 
-            // 같은 방 참가자에게 이미지 메시지 브로드캐스트
-            broadcastToRoom(msg.getRoomName(), msg);
+            // 2대2 모드시 같은 팀 유저에게만 브로드캐스트
+            broadcastToRoomForChat(msg.getRoomName(), msg);
         }
 
         // 클라이언트로부터 받은 파일 반향
@@ -409,7 +420,9 @@ public class GameServerService {
                 }
                 bos.flush();
                 printDisplay("서버 파일 수신 완료: " + fileName);
-                broadcastToRoom(roomName, msg);
+
+                // 2대2 모드시 같은 팀 유저에게만 브로드캐스트
+                broadcastToRoomForChat(msg.getRoomName(), msg);
             } catch (IOException e) {
                 printDisplay("파일 저장 오류: " + e.getMessage());
             }

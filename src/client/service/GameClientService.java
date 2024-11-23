@@ -247,7 +247,7 @@ public class GameClientService {
 
     private void startRoom(ChatMsg msg){
         gameClient.startRoomPanel(this,msg);
-        gameClient.printDisplay(msg.getRoomName()+"의 새로운 참가자 입장, 닉네임: "+msg.getNickname()+" 캐릭터: "+msg.getCharacter());
+        gameClient.printDisplay(msg.getTextMessage());
     }
 
     public ObjectOutputStream getOutStream() {
