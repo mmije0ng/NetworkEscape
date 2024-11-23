@@ -1,9 +1,6 @@
 package client;
 
-import client.FrameBuilder.GamePanel;
-import client.FrameBuilder.RoomPanel;
-import client.FrameBuilder.LoginFrameBuilder;
-import client.FrameBuilder.MainFrameBuilder;
+import client.FrameBuilder.*;
 import client.service.GameClientService;
 import data.ChatMsg;
 
@@ -11,6 +8,7 @@ import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
 import java.awt.*;
+import java.io.ObjectOutputStream;
 
 public class GameClient extends JFrame {
     private GameClientService gameClientService;
@@ -18,9 +16,10 @@ public class GameClient extends JFrame {
     private RoomPanel roomPanel;
     private LoginFrameBuilder loginFrameBuilder;
     private MainFrameBuilder mainFrameBuilder;
-    private GamePanel gamePanel;
     private JTextPane t_display;
     private DefaultStyledDocument document;
+
+    private GameWithChatPanel gameWithChatPanel;
 
     public GameClient(String serverAddress, int serverPort) {
         super("Network Escape");
@@ -53,31 +52,9 @@ public class GameClient extends JFrame {
     public void printRoom(ChatMsg msg){
         mainFrameBuilder.printLobbyList(msg.getRoomName());
     }
+
     // 텍스트 메시지 출력
-
-
-    // 이미지 메시지 출력
-    public void printDisplay(ImageIcon icon) {
-        if (icon.getIconWidth() > 400) {
-            Image img = icon.getImage().getScaledInstance(400, -1, Image.SCALE_SMOOTH);
-            icon = new ImageIcon(img);
-        }
-        t_display.setCaretPosition(t_display.getDocument().getLength());
-        t_display.insertIcon(icon);
-        printDisplay("");
-    }
-
     public void printDisplay(String msg) {
-        try {
-            int len = t_display.getDocument().getLength();
-            document.insertString(len, msg + "\n", null);
-            t_display.setCaretPosition(len);
-        } catch (BadLocationException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void printDisplayWithRoom(String msg) {
         try {
             int len = t_display.getDocument().getLength();
             document.insertString(len, msg + "\n", null);
@@ -116,11 +93,14 @@ public class GameClient extends JFrame {
         System.out.println("startRoomPanel msg code: "+msg.getCode()+", characterName: "+msg.getCharacter());
     }
 
-   // 게임 시작 패널 -> 게임 패널로 전환
-    public void startGamePanel(ChatMsg msg) {
-
+   // 게임 시작 패널 -> 게임 패널+채팅 패널로 전환
+    public void startGameWithChatPanel(ChatMsg msg, ObjectOutputStream out) {
         getContentPane().removeAll();
-        gamePanel = new GamePanel(
+
+        setSize(1100, 600);
+
+        // 게임 패널 생성
+        GamePanel gamePanel = new GamePanel(
                 msg.getNickname(),
                 msg.getCharacter(),
                 msg.getRoomName(),
@@ -128,9 +108,13 @@ public class GameClient extends JFrame {
                 msg.getTeam(),
                 gameClientService.getOutStream()
         );
-        gamePanel.updateOtherPlayerPosition(msg.getNickname(), msg.getCharacter(), 10, getHeight()-40);
 
-        add(gamePanel);
+        // 채팅 패널 생성
+        ChatPanel chatPanel = new ChatPanel( msg.getRoomName(), msg.getNickname(), msg.getCharacter(), msg.getGameMode(), msg.getTeam(), out);
+
+        // 게임+채팅 패널 생성 & 추가
+        gameWithChatPanel = new GameWithChatPanel(gamePanel, chatPanel);
+        add(gameWithChatPanel);
 
         gamePanel.requestFocusInWindow();
 
@@ -138,8 +122,8 @@ public class GameClient extends JFrame {
         repaint();
     }
 
-    public GamePanel getGamePanel(){
-        return gamePanel;
+    public GameWithChatPanel getGameWithChatPanel() {
+        return gameWithChatPanel;
     }
 
     public static void main(String[] args) {
