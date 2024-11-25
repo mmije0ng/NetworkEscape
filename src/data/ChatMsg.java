@@ -4,7 +4,8 @@ import javax.swing.*;
 
 // 채팅 메시지 & 게임 시작 전 메시지 클래스
 public class ChatMsg extends BaseMsg {
-    private final ImageIcon image;   // 이미지 아이콘
+    private ImageIcon image;   // 이미지 아이콘
+    private final byte[] imageBytes; // 이미지 데이터를 바이트 배열로 저장
     private final String fileName;   // 파일 이름
     private final long fileSize;     // 파일 크기
     private final String textMessage; // 텍스트 메시지
@@ -12,6 +13,7 @@ public class ChatMsg extends BaseMsg {
     private ChatMsg(Builder builder) {
         super(builder);
         this.image = builder.image;
+        this.imageBytes = builder.imageBytes;
         this.fileName = builder.fileName;
         this.fileSize = builder.fileSize;
         this.textMessage = builder.textMessage;
@@ -20,6 +22,11 @@ public class ChatMsg extends BaseMsg {
     // Getters
     public ImageIcon getImage() {
         return image;
+    }
+
+    // 이미지 데이터를 바이트 배열로 가져옴
+    public byte[] getImageBytes() {
+        return imageBytes;
     }
 
     public String getFileName() {
@@ -34,9 +41,14 @@ public class ChatMsg extends BaseMsg {
         return textMessage;
     }
 
+    public void setImage(ImageIcon image) {
+        this.image = image;
+    }
+
     // Builder 클래스
     public static class Builder extends BaseMsg.Builder<Builder> {
         private ImageIcon image;
+        private byte[] imageBytes;
         private String fileName;
         private long fileSize;
         private String textMessage; // 텍스트 메시지
@@ -47,6 +59,11 @@ public class ChatMsg extends BaseMsg {
 
         public Builder image(ImageIcon image) {
             this.image = image;
+            return this;
+        }
+
+        public Builder imageBytes(byte[] imageBytes) {
+            this.imageBytes = imageBytes;
             return this;
         }
 
@@ -75,4 +92,6 @@ public class ChatMsg extends BaseMsg {
             return new ChatMsg(this);
         }
     }
+
+
 }

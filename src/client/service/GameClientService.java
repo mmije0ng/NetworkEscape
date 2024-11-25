@@ -153,11 +153,11 @@ public class GameClientService {
             case "START_GAME" -> startGame(msg); // 게임 시작
             case "UPDATE_ROOMLIST" -> gameClient.printRoom(msg);
             case "WAITING" -> gameClient.printDisplay("게임 시작 대기 중입니다..."); // 게임 대기
-            case "TX_STRING" -> gameClient.printDisplay(msg.getNickname() + ": " + msg.getMessage()); // 텍스트 채팅 메시지
-            case "TX_FILE" -> gameClient.printDisplay("파일 수신: " + msg.getMessage()); // 파일 채팅 메시지
+            case "TX_STRING" -> gameClient.getGameWithChatPanel().getChatPanel().printDisplay("["+msg.getNickname()+"]: "+msg.getTextMessage()); // 텍스트 채팅 메시지
+            case "TX_FILE" -> gameClient.getGameWithChatPanel().getChatPanel().printDisplay("["+msg.getNickname()+"] 파일: " + msg.getFileName() + " (" + msg.getFileSize() + " bytes)"); // 파일 채팅 메시지
             case "TX_IMAGE" -> { // 이미지 채팅 메시지
-                gameClient.printDisplay("이미지 수신: " + msg.getMessage());
-                gameClient.printDisplay(msg.getImage());
+                gameClient.getGameWithChatPanel().getChatPanel().printDisplay("["+msg.getNickname()+"]: 이미지 " + msg.getFileName());
+                gameClient.getGameWithChatPanel().getChatPanel().printDisplay(msg.getImage());
             }
             default -> gameClient.printDisplay("알 수 없는 메시지 유형 수신: " + msg.getCode());
         }
@@ -166,7 +166,7 @@ public class GameClientService {
     // 서버로부터 받은 GameMsg 객체
     private void handleGameMessage(GameMsg gameMsg) {
         // 게임 메시지 처리 로직
-        gameClient.getGamePanel().updateOtherPlayerPosition(
+        gameClient.getGameWithChatPanel().getGamePanel().updateOtherPlayerPosition(
                 gameMsg.getNickname(),
                 gameMsg.getCharacter(),
                 gameMsg.getX(),
@@ -232,7 +232,7 @@ public class GameClientService {
     // 서버로부터 START_GAME 메시지 수신 시 게임 시작
     private void startGame(ChatMsg msg) {
         System.out.println("게임 시작, 코드: "+msg.getCode() + " 캐릭터: "+msg.getCharacter());
-        gameClient.startGamePanel(msg); // GameClient에서 GamePanel로 전환
+        gameClient.startGameWithChatPanel(msg, out); // GameClient에서 GamePanel로 전환
     }
 
     //메인화면
@@ -244,7 +244,7 @@ public class GameClientService {
     //대기방 화면
     private void startRoom(ChatMsg msg){
         gameClient.startRoomPanel(this,msg);
-        gameClient.printDisplay(msg.getRoomName()+"의 새로운 참가자 입장, 닉네임: "+msg.getNickname()+" 캐릭터: "+msg.getCharacter());
+        gameClient.printDisplay(msg.getTextMessage());
     }
 
     public ObjectOutputStream getOutStream() {

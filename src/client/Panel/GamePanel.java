@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+
 public class GamePanel extends JPanel {
     // 메시지 전송 스레드 관련 변수
     private Thread messageSenderThread; // 메시지 전송 스레드
@@ -68,7 +70,6 @@ public class GamePanel extends JPanel {
 
     private boolean isBlocked = false; // 플레이어가 움직임이 차단되었는지 여부
 
-
     public GamePanel(String nickName, String character, String roomName, Integer mode, Integer team, ObjectOutputStream out) {
         this.nickName = nickName;
         this.character = character;
@@ -80,7 +81,7 @@ public class GamePanel extends JPanel {
         this.out = out;
 
         setSize(800, 600);
-        
+
         loadImages(); // 이미지 로드
         setFocusable(true); // 키보드 입력 활성화
 
@@ -276,12 +277,12 @@ public class GamePanel extends JPanel {
     // 플레이어 초기 위치 설정
     // 작동 안 됨.. 서버로 메시지 전송 해야 될 듯
     private void initializePlayerPosition() {
-        playerX = 10; // 기본 X 좌표
+        playerX = ThreadLocalRandom.current().nextInt(5, 41); // 5에서 40 사이의 랜덤 값
         playerY = getHeight() - 40; // 기본 Y 좌표
-        int offset = 30; // 플레이어 간 간격
-        if (!otherPlayers.isEmpty()) {
-            playerX += otherPlayers.size() * offset;
-        }
+//        int offset = 30; // 플레이어 간 간격
+//        if (!otherPlayers.isEmpty()) {
+//            playerX += otherPlayers.size() * offset;
+//        }
     }
 
     // 플레이어가 블록 위에 서 있지 않은 경우 하강
