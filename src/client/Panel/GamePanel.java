@@ -217,19 +217,19 @@ public class GamePanel extends JPanel {
     private void loadImages() {
         try {
             // 캐릭터 이미지 로드
-            characterImages.put("fire", new ImageIcon("src/image/character/fire.png").getImage());
-            characterImages.put("water", new ImageIcon("src/image/character/water.png").getImage());
-            characterImages.put("ember", new ImageIcon("src/image/character/ember.png").getImage());
-            characterImages.put("wade", new ImageIcon("src/image/character/wade.png").getImage());
+            characterImages.put("fire", new ImageIcon("./src/image/character/fire.png").getImage());
+            characterImages.put("water", new ImageIcon("./src/image/character/water.png").getImage());
+            characterImages.put("ember", new ImageIcon("./src/image/character/ember.png").getImage());
+            characterImages.put("wade", new ImageIcon("./src/image/character/wade.png").getImage());
 
-            doorImages.add(new ImageIcon("src/image/door/door1.png").getImage());
-            doorImages.add(new ImageIcon("src/image/door/door2.png").getImage());
-            doorImages.add(new ImageIcon("src/image/door/door3.png").getImage());
-            doorImages.add(new ImageIcon("src/image/door/door4.png").getImage());
+            doorImages.add(new ImageIcon("./src/image/door/door1.png").getImage());
+            doorImages.add(new ImageIcon("./src/image/door/door2.png").getImage());
+            doorImages.add(new ImageIcon("./src/image/door/door3.png").getImage());
+            doorImages.add(new ImageIcon("./src/image/door/door4.png").getImage());
 
             // 배경 및 블록 이미지 로드
-            backgroundImage = new ImageIcon("src/image/background/stage1.jpg").getImage();
-            blockImage = new ImageIcon("src/image/block/block2.png").getImage();
+            backgroundImage = new ImageIcon("./src/image/background/stage1.jpg").getImage();
+            blockImage = new ImageIcon("./src/image/block/block2.png").getImage();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("이미지 파일 로드 실패");

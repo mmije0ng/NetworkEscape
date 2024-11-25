@@ -191,9 +191,9 @@ public class MainPanel extends JPanel{
         JPanel bluePanel = new JPanel(new GridLayout(3, 1));
         bluePanel.setBorder(BorderFactory.createLineBorder(Color.BLUE));
 
-        JButton blueCharacter1 = createCharacterButton("src/image/character/water.png", "water");
-        JButton blueCharacter2 = createCharacterButton("src/image/character/wade.png", "wade");
-        JButton blueCharacter3 = createCharacterButton("src/image/character/blue3.png", "blue3");
+        JButton blueCharacter1 = createCharacterButton("./src/image/character/water.png", "water");
+        JButton blueCharacter2 = createCharacterButton("./src/image/character/wade.png", "wade");
+        JButton blueCharacter3 = createCharacterButton("./src/image/character/blue3.png", "blue3");
 
         bluePanel.add(blueCharacter1);
         bluePanel.add(blueCharacter2);
@@ -203,9 +203,9 @@ public class MainPanel extends JPanel{
         JPanel redPanel = new JPanel(new GridLayout(3, 1));
         redPanel.setBorder(BorderFactory.createLineBorder(Color.RED));
 
-        JButton redCharacter1 = createCharacterButton("src/image/character/fire.png", "fire");
-        JButton redCharacter2 = createCharacterButton("src/image/character/ember.png", "ember");
-        JButton redCharacter3 = createCharacterButton("src/image/character/red3.png", "red3");
+        JButton redCharacter1 = createCharacterButton("./src/image/character/fire.png", "fire");
+        JButton redCharacter2 = createCharacterButton("./src/image/character/ember.png", "ember");
+        JButton redCharacter3 = createCharacterButton("./src/image/character/red3.png", "red3");
 
         redPanel.add(redCharacter1);
         redPanel.add(redCharacter2);
