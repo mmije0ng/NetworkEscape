@@ -322,7 +322,7 @@ public class GameServerService {
                 if(msg.getRoomName().equals("")) return;
 
                 //입력한 방이름, 비밀번호 검사
-                if(user.roomName.equals(msg.getRoomName())&&user.password.equals(msg.getPassword())){
+                if(user!=this&&user.roomName.equals(msg.getRoomName())&&user.password.equals(msg.getPassword())){
                     if((roomUsers.size()+1)%2!=0) team=1; //홀수번째 입장:1팀, 짝수번째 입장:2팀
                     else team=2;
 
