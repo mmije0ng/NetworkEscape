@@ -1,9 +1,9 @@
 package client;
 
-import client.FrameBuilder.GamePanel;
-import client.FrameBuilder.RoomPanel;
-import client.FrameBuilder.LoginFrameBuilder;
-import client.FrameBuilder.MainFrameBuilder;
+import client.Panel.GamePanel;
+import client.Panel.RoomPanel;
+import client.Panel.LoginPanel;
+import client.Panel.MainPanel;
 import client.service.GameClientService;
 import data.ChatMsg;
 
@@ -16,8 +16,8 @@ public class GameClient extends JFrame {
     private GameClientService gameClientService;
 
     private RoomPanel roomPanel;
-    private LoginFrameBuilder loginFrameBuilder;
-    private MainFrameBuilder mainFrameBuilder;
+    private LoginPanel loginPanel;
+    private MainPanel mainPanel;
     private GamePanel gamePanel;
     private JTextPane t_display;
     private DefaultStyledDocument document;
@@ -27,9 +27,9 @@ public class GameClient extends JFrame {
 
         gameClientService = new GameClientService(this, serverAddress, serverPort);
 //        gameStartPanel = new GameStartPanel(gameClientService);
-        loginFrameBuilder = new LoginFrameBuilder(gameClientService, serverAddress, serverPort);
+        loginPanel = new LoginPanel(gameClientService, serverAddress, serverPort);
         roomPanel = new RoomPanel(gameClientService, new ChatMsg.Builder("").build());
-        mainFrameBuilder = new MainFrameBuilder(gameClientService, "");
+        mainPanel = new MainPanel(gameClientService, "");
 
         buildGUI();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -45,13 +45,13 @@ public class GameClient extends JFrame {
         t_display = new JTextPane(document);
         t_display.setEditable(false);
 
-        add(loginFrameBuilder,BorderLayout.CENTER);
+        add(loginPanel,BorderLayout.CENTER);
 //        add(new JScrollPane(t_display), BorderLayout.CENTER);
 //        add(gameStartPanel, BorderLayout.SOUTH);
     }
 
     public void printRoom(ChatMsg msg){
-        mainFrameBuilder.printLobbyList(msg.getRoomName());
+        mainPanel.printLobbyList(msg.getRoomName());
     }
     // 텍스트 메시지 출력
 
@@ -90,10 +90,10 @@ public class GameClient extends JFrame {
     public void startMainPanel(GameClientService service, ChatMsg msg){
         getContentPane().removeAll();
 
-        mainFrameBuilder = new MainFrameBuilder(service,msg.getNickname());
-        add(mainFrameBuilder);
-        mainFrameBuilder.setVisible(true);
-        mainFrameBuilder.requestFocusInWindow();
+        mainPanel = new MainPanel(service,msg.getNickname());
+        add(mainPanel);
+        mainPanel.setVisible(true);
+        mainPanel.requestFocusInWindow();
 
         revalidate();
         repaint();
@@ -136,6 +136,18 @@ public class GameClient extends JFrame {
 
         revalidate();
         repaint();
+    }
+
+    public void startLoginPanel(String serverAddress, int serverPort){
+        getContentPane().removeAll();
+        loginPanel = new LoginPanel(gameClientService,serverAddress,serverPort);
+
+        add(loginPanel);
+        loginPanel.requestFocusInWindow();
+
+        revalidate();
+        repaint();
+
     }
 
     public GamePanel getGamePanel(){

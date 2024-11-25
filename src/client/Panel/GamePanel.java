@@ -1,4 +1,4 @@
-package client.FrameBuilder;
+package client.Panel;
 
 import data.GameMsg;
 

@@ -1,4 +1,4 @@
-package client.FrameBuilder;
+package client.Panel;
 
 import client.service.GameClientService;
 
@@ -10,10 +10,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 
-public class MainFrameBuilder extends JPanel{
+public class MainPanel extends JPanel{
     public JTextField t_lobbyName,t_lobbyPassword;
     public JTextArea t_lobbyList;
-    public JButton b_playMode1, b_playMode2, b_createLobby,b_searchLobby,b_enterLobby;
+    public JButton b_playMode1, b_playMode2, b_createLobby, b_logout,b_enterLobby;
 
     public JButton blueCharacter1,blueCharacter2,blueCharacter3;
     public JButton redCharacter1,redCharacter2,redCharacter3;
@@ -26,7 +26,7 @@ public class MainFrameBuilder extends JPanel{
     private String selectedCharacter; // 선택된 캐릭터 이름
 
 
-    public MainFrameBuilder(GameClientService service, String username){
+    public MainPanel(GameClientService service, String username){
         this.service = service;
         this.userName=username;
         buildGUI(username);
@@ -138,10 +138,6 @@ public class MainFrameBuilder extends JPanel{
         topPanel.add(b_createLobby, gbc);
 
         gbc.gridy = 4;
-        b_searchLobby = new JButton("방 검색");
-        topPanel.add(b_searchLobby, gbc);
-
-        gbc.gridy = 5;
         b_enterLobby = new JButton("방 참가");
 
         b_enterLobby.addActionListener(e -> service.enterRoom(
@@ -152,6 +148,11 @@ public class MainFrameBuilder extends JPanel{
                 playmode
         ));
         topPanel.add(b_enterLobby, gbc);
+
+        gbc.gridy = 5;
+        b_logout = new JButton("로그아웃");
+        topPanel.add(b_logout, gbc);
+        b_logout.addActionListener(e -> service.disconnect(userName));
 
         panel.add(topPanel);
         panel.add(bottomPanel);

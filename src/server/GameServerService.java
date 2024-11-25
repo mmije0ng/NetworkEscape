@@ -223,6 +223,8 @@ public class GameServerService {
         }
         private void handleLOGIN(ChatMsg msg){
            nickName = msg.getNickname();
+
+           //닉네임 중복 확인
            for(ClientHandler user : users){
                if(user.nickName.equals(msg.getNickname())){
                    printDisplay("닉네임 중복: "+user.nickName);
@@ -234,10 +236,14 @@ public class GameServerService {
                    return;
                }
            }
+
+           //로그인 성공 메시지
            send(new ChatMsg.Builder("LOGIN_SUCCESS")
                     .nickname(nickName)
                     .build()
            );
+
+           //유저 추가
             synchronized (users) {
                 users.add(this);
             }
@@ -246,7 +252,19 @@ public class GameServerService {
         }
 
         private void handleLOGOUT(ChatMsg msg){
+            //메시지로 전달받은 이름의 유저를 제거
+            for(ClientHandler user: users){
+                if(user.nickName.equals(msg.getNickname())){
+                    users.remove(user);
+                    break;
+                }
+            }
+            send(new ChatMsg.Builder("LOGOUT_SUCCESS")
+                    .build()
+            );
+
             System.out.println(nickName + ": 로그아웃");
+            printDisplay("현재 참가자 수: "+users.size());
         }
 
         //방 생성
@@ -300,11 +318,11 @@ public class GameServerService {
             Vector<ClientHandler> roomUsers = roomMap.get(roomName);
 
             for(ClientHandler user : users){
+                //방 이름이 빈 문자열이면 x
                 if(msg.getRoomName().equals("")) return;
-                //입력한 방 이름과 비밀번호가 맞으면r
-                if(user.roomName.equals(msg.getRoomName())||
-                user.password.equals(msg.getPassword())){
 
+                //입력한 방이름, 비밀번호 검사
+                if(user.roomName.equals(msg.getRoomName())&&user.password.equals(msg.getPassword())){
                     if((roomUsers.size()+1)%2!=0) team=1; //홀수번째 입장:1팀, 짝수번째 입장:2팀
                     else team=2;
 

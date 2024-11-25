@@ -1,11 +1,9 @@
-package client.FrameBuilder;
+package client.Panel;
 
 import client.service.GameClientService;
 import data.ChatMsg;
 
 import javax.swing.*;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.DefaultStyledDocument;
 import java.awt.*;
 
 public class RoomPanel extends JPanel {

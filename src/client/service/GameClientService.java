@@ -80,18 +80,12 @@ public class GameClientService {
     }
     // 유저 로그아웃 - 로그인 화면으로 이동
     public void disconnect(String nickName){
-        try {
-            ChatMsg chatMsg=new ChatMsg.Builder("LOGOUT")
+
+        ChatMsg chatMsg=new ChatMsg.Builder("LOGOUT")
                 .nickname(nickName)
                 .build();
-            send(chatMsg);  //서버로 LOGOUT 코드 전송
-            socket.close();
+        send(chatMsg);  //서버로 LOGOUT 코드 전송
 
-        } catch (IOException e) {
-            gameClient.printDisplay("연결 종료 중 오류: " + e.getMessage());
-        } finally {
-            receiveThread = null;
-        }
     }
     //대기방 나가기
     public void exitRoom(String roomName, String nickName, String characterName, int mode, int team) {
@@ -150,6 +144,7 @@ public class GameClientService {
         switch (msg.getCode()) {
             case "LOGIN_SUCCESS" -> startMain(msg);
 //            case "LOGIN_FAIL" -> 닉네임이 중복된다는 알람
+            case "LOGOUT_SUCCESS" -> gameClient.startLoginPanel(serverAddress,serverPort);
             case "CREATE_SUCCESS" -> startRoom(msg);
             case "CREATE_FAIL" -> System.out.println("방 생성 실패");
             case "ENTER_SUCCESS" -> startRoom(msg);
@@ -240,11 +235,13 @@ public class GameClientService {
         gameClient.startGamePanel(msg); // GameClient에서 GamePanel로 전환
     }
 
+    //메인화면
     private void startMain(ChatMsg msg){
         System.out.println("메인화면 시작");
         gameClient.startMainPanel(this,msg);
     }
 
+    //대기방 화면
     private void startRoom(ChatMsg msg){
         gameClient.startRoomPanel(this,msg);
         gameClient.printDisplay(msg.getRoomName()+"의 새로운 참가자 입장, 닉네임: "+msg.getNickname()+" 캐릭터: "+msg.getCharacter());
