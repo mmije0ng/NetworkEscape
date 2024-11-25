@@ -1,4 +1,4 @@
-package client.FrameBuilder;
+package client.Panel;
 
 import data.GameMsg;
 
@@ -11,12 +11,15 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.ObjectOutputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+
 public class GamePanel extends JPanel {
     // 메시지 전송 스레드 관련 변수
     private Thread messageSenderThread; // 메시지 전송 스레드
@@ -68,7 +71,6 @@ public class GamePanel extends JPanel {
 
     private boolean isBlocked = false; // 플레이어가 움직임이 차단되었는지 여부
 
-
     public GamePanel(String nickName, String character, String roomName, Integer mode, Integer team, ObjectOutputStream out) {
         this.nickName = nickName;
         this.character = character;
@@ -80,7 +82,7 @@ public class GamePanel extends JPanel {
         this.out = out;
 
         setSize(800, 600);
-        
+
         loadImages(); // 이미지 로드
         setFocusable(true); // 키보드 입력 활성화
 
@@ -216,23 +218,39 @@ public class GamePanel extends JPanel {
     private void loadImages() {
         try {
             // 캐릭터 이미지 로드
-            characterImages.put("fire", new ImageIcon("src/image/character/fire.png").getImage());
-            characterImages.put("water", new ImageIcon("src/image/character/water.png").getImage());
-            characterImages.put("ember", new ImageIcon("src/image/character/ember.png").getImage());
-            characterImages.put("wade", new ImageIcon("src/image/character/wade.png").getImage());
+            characterImages.put("fire", createImageIcon("/image/character/fire.png").getImage());
+            characterImages.put("water", createImageIcon("/image/character/water.png").getImage());
+            characterImages.put("엠버", createImageIcon("/image/character/ember.png").getImage());
+            characterImages.put("웨이드", createImageIcon("/image/character/wade.png").getImage());
+            characterImages.put("버럭이", createImageIcon("/image/character/anger.png").getImage());
+            characterImages.put("슬픔이", createImageIcon("/image/character/sad.png").getImage());
 
-            doorImages.add(new ImageIcon("src/image/door/door1.png").getImage());
-            doorImages.add(new ImageIcon("src/image/door/door2.png").getImage());
-            doorImages.add(new ImageIcon("src/image/door/door3.png").getImage());
-            doorImages.add(new ImageIcon("src/image/door/door4.png").getImage());
+
+            doorImages.add(createImageIcon("/image/door/door1.png").getImage());
+            doorImages.add(createImageIcon("/image/door/door2.png").getImage());
+            doorImages.add(createImageIcon("/image/door/door3.png").getImage());
+            doorImages.add(createImageIcon("/image/door/door4.png").getImage());
 
             // 배경 및 블록 이미지 로드
-            backgroundImage = new ImageIcon("src/image/background/stage1.jpg").getImage();
-            blockImage = new ImageIcon("src/image/block/block2.png").getImage();
+            backgroundImage = createImageIcon("/image/background/stage1.png").getImage();
+            blockImage = createImageIcon("/image/block/block2.png").getImage();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("이미지 파일 로드 실패");
         }
+    }
+
+    // 이미지 경로를 가져와 ImageIcon 생성
+    public ImageIcon createImageIcon(String imagePath) {
+        // 클래스패스에서 리소스를 로드
+        URL url = this.getClass().getResource(imagePath);
+
+        if (url == null) {
+            System.err.println("리소스를 찾을 수 없습니다: " + imagePath);
+        }
+
+        // ImageIcon 생성
+        return new ImageIcon(url);
     }
 
     // 입력된 키가 유효한 키인지 확인
@@ -276,12 +294,12 @@ public class GamePanel extends JPanel {
     // 플레이어 초기 위치 설정
     // 작동 안 됨.. 서버로 메시지 전송 해야 될 듯
     private void initializePlayerPosition() {
-        playerX = 10; // 기본 X 좌표
+        playerX = ThreadLocalRandom.current().nextInt(5, 41); // 5에서 40 사이의 랜덤 값
         playerY = getHeight() - 40; // 기본 Y 좌표
-        int offset = 30; // 플레이어 간 간격
-        if (!otherPlayers.isEmpty()) {
-            playerX += otherPlayers.size() * offset;
-        }
+//        int offset = 30; // 플레이어 간 간격
+//        if (!otherPlayers.isEmpty()) {
+//            playerX += otherPlayers.size() * offset;
+//        }
     }
 
     // 플레이어가 블록 위에 서 있지 않은 경우 하강

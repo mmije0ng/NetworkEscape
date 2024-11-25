@@ -109,12 +109,26 @@ public class GameServerService {
     // 같은 방의 유저들에게 ChatMsg 브로드캐스트
     private synchronized void broadcastToRoom(String roomName, ChatMsg chatMsg) {
         Vector<ClientHandler> clients = roomMap.get(roomName);
-        if (clients != null) {
-            for (ClientHandler client : clients) {
+        if (clients == null) return; // 방이 존재하지 않으면 종료
+
+        for (ClientHandler client : clients) {
+            client.send(chatMsg);
+        }
+    }
+
+    // 2대2 모드 시 같은 방, 같은 팀 유저에게만 ChatMsg 브로드캐스트
+    private synchronized void broadcastToRoomForChat(String roomName, ChatMsg chatMsg) {
+        Vector<ClientHandler> clients = roomMap.get(roomName);
+        if (clients == null) return; // 방이 존재하지 않으면 종료
+
+        for (ClientHandler client : clients) {
+            // 2대2 모드인 경우 같은 팀에게만 메시지 전송
+            if (chatMsg.getGameMode() != 2 || chatMsg.getTeam() == client.team) {
                 client.send(chatMsg);
             }
         }
     }
+
 
     // 같은 방의 유저들에게 GameMsg 브로드캐스트
     private synchronized void broadcastToRoom(String roomName, GameMsg gameMsg) {
@@ -182,9 +196,9 @@ public class GameServerService {
         // 클라이언트로부터 받은 메시지 관리
         private void receiveMessages() {
             try {
-                out = new ObjectOutputStream(new BufferedOutputStream(clientSocket.getOutputStream()));
-                out.flush();
                 in = new ObjectInputStream(new BufferedInputStream(clientSocket.getInputStream()));
+                out = new ObjectOutputStream(new BufferedOutputStream(clientSocket.getOutputStream()));
+                out.flush(); // 반드시 flush 호출
 
                 BaseMsg msg;
 
@@ -212,6 +226,7 @@ public class GameServerService {
                     }
                 }
             } catch (ClassNotFoundException | IOException e) {
+                e.printStackTrace();
                 printDisplay("서버 수신 오류: " + e.getMessage());
                 System.err.println("서버 수신 오류: " + e.getMessage());
             } finally {
@@ -223,6 +238,8 @@ public class GameServerService {
         }
         private void handleLOGIN(ChatMsg msg){
            nickName = msg.getNickname();
+
+           //닉네임 중복 확인
            for(ClientHandler user : users){
                if(user.nickName.equals(msg.getNickname())){
                    printDisplay("닉네임 중복: "+user.nickName);
@@ -234,10 +251,14 @@ public class GameServerService {
                    return;
                }
            }
+
+           //로그인 성공 메시지
            send(new ChatMsg.Builder("LOGIN_SUCCESS")
                     .nickname(nickName)
                     .build()
            );
+
+           //유저 추가
             synchronized (users) {
                 users.add(this);
             }
@@ -246,7 +267,19 @@ public class GameServerService {
         }
 
         private void handleLOGOUT(ChatMsg msg){
+            //메시지로 전달받은 이름의 유저를 제거
+            for(ClientHandler user: users){
+                if(user.nickName.equals(msg.getNickname())){
+                    users.remove(user);
+                    break;
+                }
+            }
+            send(new ChatMsg.Builder("LOGOUT_SUCCESS")
+                    .build()
+            );
+
             System.out.println(nickName + ": 로그아웃");
+            printDisplay("현재 참가자 수: "+users.size());
         }
 
         //방 생성
@@ -276,6 +309,7 @@ public class GameServerService {
                     .character(characterName)
                     .roomName(roomName)
                     .password(password)
+                    .textMessage("["+msg.getRoomName()+"] 의 새로운 참가자 입장, 닉네임: "+msg.getNickname()+", 캐릭터: "+msg.getCharacter())
                     .build()
             );
             rooms.add(roomName);
@@ -300,18 +334,18 @@ public class GameServerService {
             Vector<ClientHandler> roomUsers = roomMap.get(roomName);
 
             for(ClientHandler user : users){
+                //방 이름이 빈 문자열이면 x
                 if(msg.getRoomName().equals("")) return;
-                //입력한 방 이름과 비밀번호가 맞으면r
-                if(user.roomName.equals(msg.getRoomName())||
-                user.password.equals(msg.getPassword())){
 
+                //입력한 방이름, 비밀번호 검사
+                if(user!=this&&user.roomName.equals(msg.getRoomName())&&user.password.equals(msg.getPassword())){
                     if((roomUsers.size()+1)%2!=0) team=1; //홀수번째 입장:1팀, 짝수번째 입장:2팀
                     else team=2;
 
                     addClientToRoom(roomName, this); // 같은 이름의 게임방에 클라이언트 추가
 
                     printDisplay("새로운 참가자 enter");
-                    printDisplay("roomName: "+roomName+", "+", nickName: "+nickName+" gameMode: "+gameMode+", team: "+team);
+                    printDisplay("roomName: "+roomName+", "+", nickName: "+nickName+", gameMode: "+gameMode+", team: "+team);
 
                     ChatMsg chatMsg = new ChatMsg.Builder("ENTER_SUCCESS")
                             .nickname(nickName)
@@ -320,9 +354,10 @@ public class GameServerService {
                             .roomName(roomName)
                             .team(team)
                             .password(password)
+                            .textMessage("["+msg.getRoomName()+"] 의 새로운 참가자 입장, 닉네임: "+msg.getNickname()+" 캐릭터: "+msg.getCharacter())
                             .build();
 
-                    send(chatMsg);
+//                    send(chatMsg);
                     broadcastToRoom(roomName, chatMsg);
 
                     return;
@@ -359,25 +394,38 @@ public class GameServerService {
         // 클라이언트로부터 받은 텍스트 메시지 반향
         // code: TX_STRING
         private void handleTextMessage(ChatMsg msg) {
-            String message = "[" + roomName + "] " + nickName + ": " + msg.getMessage();
+            String message = "[" + roomName + "] " + nickName + ": " + msg.getTextMessage();
             printDisplay(message);
 
-            // 같은 방 참가자에게 메시지 브로드캐스트
-            broadcastToRoom(roomName, msg);
+            // 2대2 모드시 같은 팀 유저에게만 브로드캐스트
+            broadcastToRoomForChat(msg.getRoomName(), msg);
         }
 
         // 클라이언트로부터 받은 이미지 반향
         // code: TX_IMAGE
         private void handleImageMessage(ChatMsg msg) {
-            printDisplay("[" + roomName + "] " + nickName + " (이미지 전송): " + msg.getImage());
-            broadcastToRoom(roomName, msg);
+            byte[] imageBytes = msg.getImageBytes();
+            if (imageBytes == null) {
+                printDisplay(">> 이미지 데이터가 없습니다: " + msg.getFileName());
+                return;
+            }
+
+            ImageIcon imageIcon = new ImageIcon(imageBytes); // 바이트 배열을 ImageIcon으로 변환
+            printDisplay("[" + msg.getRoomName() + "] " + msg.getNickname() + " (이미지 전송): " + msg.getFileName());
+
+            msg.setImage(imageIcon);
+            System.out.println("서버 imageIcon: "+imageIcon.getImage().toString());
+
+
+            // 2대2 모드시 같은 팀 유저에게만 브로드캐스트
+            broadcastToRoomForChat(msg.getRoomName(), msg);
         }
 
         // 클라이언트로부터 받은 파일 반향
         // code: TX_FILE
         private void handleFileMessage(ChatMsg msg) {
-            String fileName = msg.getMessage();
-            printDisplay("파일 수신 시작: " + fileName + " (" + msg.getFileSize() + " bytes)");
+            String fileName = msg.getFileName();
+            printDisplay("서버 파일 수신 시작: " + fileName + " (" + msg.getFileSize() + " bytes)");
 
             try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(fileName))) {
                 byte[] buffer = new byte[1024];
@@ -389,7 +437,10 @@ public class GameServerService {
                     remaining -= nRead;
                 }
                 bos.flush();
-                printDisplay("파일 수신 완료: " + fileName);
+                printDisplay("서버 파일 수신 완료: " + fileName);
+
+                // 2대2 모드시 같은 팀 유저에게만 브로드캐스트
+                broadcastToRoomForChat(msg.getRoomName(), msg);
             } catch (IOException e) {
                 printDisplay("파일 저장 오류: " + e.getMessage());
             }
@@ -419,6 +470,7 @@ public class GameServerService {
 
             System.out.println("checkStartCondition");
             System.out.println("["+roomName+"] gameMode: "+gameMode+", team: "+team);
+            printDisplay("["+roomName+"] gameMode: "+gameMode+", team: "+team);
 
             if (gameMode == 1) { // 1대1 모드: 같은 방에 두 명이 있으면 게임 시작
                 if (roomUsers.size() == 2) { // 1대1 모드 시 같은 방의 유저가 두 명이면 게임 시작
@@ -450,9 +502,6 @@ public class GameServerService {
                         .team(team)
                         .nickname(nickName)
                         .character(characterName)
-                        .image(null)
-                        .fileName(null)
-                        .fileSize(0)
                         .build(); // 빌더 패턴에서 객체 생성
 
                 System.out.println("WAITING");
@@ -478,9 +527,6 @@ public class GameServerService {
                             .team(user.team)
                             .nickname(user.nickName)
                             .character(user.characterName)
-                            .image(null)
-                            .fileName(null)
-                            .fileSize(0)
                             .build(); // 빌더 패턴에서 객체 생성
 
                     System.out.println("서버 startGameForRoom: " + chatMsg.getCharacter());

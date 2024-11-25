@@ -1,4 +1,4 @@
-package client.FrameBuilder;
+package client.Panel;
 
 import client.service.GameClientService;
 
@@ -7,14 +7,14 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class LoginFrameBuilder extends JPanel {
+public class LoginPanel extends JPanel {
     private JTextField t_serverAddr,t_portNum,t_userName;
     private JButton b_connect, b_exit;
     private JPanel inputPanel,buttonPanel;
 
     private GameClientService service;
 
-    public LoginFrameBuilder(GameClientService service,String serverAddress,int serverPort){
+    public LoginPanel(GameClientService service, String serverAddress, int serverPort){
         this.service = service;
         buildGUI(serverAddress,serverPort);
     }

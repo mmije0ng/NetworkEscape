@@ -1,4 +1,4 @@
-package client.FrameBuilder;
+package client.Panel;
 
 import client.service.GameClientService;
 
@@ -8,12 +8,13 @@ import javax.swing.text.DefaultStyledDocument;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.net.URL;
 
 
-public class MainFrameBuilder extends JPanel{
+public class MainPanel extends JPanel{
     public JTextField t_lobbyName,t_lobbyPassword;
     public JTextArea t_lobbyList;
-    public JButton b_playMode1, b_playMode2, b_createLobby,b_searchLobby,b_enterLobby;
+    public JButton b_playMode1, b_playMode2, b_createLobby, b_logout,b_enterLobby;
 
     public JButton blueCharacter1,blueCharacter2,blueCharacter3;
     public JButton redCharacter1,redCharacter2,redCharacter3;
@@ -26,7 +27,7 @@ public class MainFrameBuilder extends JPanel{
     private String selectedCharacter; // 선택된 캐릭터 이름
 
 
-    public MainFrameBuilder(GameClientService service, String username){
+    public MainPanel(GameClientService service, String username){
         this.service = service;
         this.userName=username;
         buildGUI(username);
@@ -138,10 +139,6 @@ public class MainFrameBuilder extends JPanel{
         topPanel.add(b_createLobby, gbc);
 
         gbc.gridy = 4;
-        b_searchLobby = new JButton("방 검색");
-        topPanel.add(b_searchLobby, gbc);
-
-        gbc.gridy = 5;
         b_enterLobby = new JButton("방 참가");
 
         b_enterLobby.addActionListener(e -> service.enterRoom(
@@ -152,6 +149,11 @@ public class MainFrameBuilder extends JPanel{
                 playmode
         ));
         topPanel.add(b_enterLobby, gbc);
+
+        gbc.gridy = 5;
+        b_logout = new JButton("로그아웃");
+        topPanel.add(b_logout, gbc);
+        b_logout.addActionListener(e -> service.disconnect(userName));
 
         panel.add(topPanel);
         panel.add(bottomPanel);
@@ -190,9 +192,9 @@ public class MainFrameBuilder extends JPanel{
         JPanel bluePanel = new JPanel(new GridLayout(3, 1));
         bluePanel.setBorder(BorderFactory.createLineBorder(Color.BLUE));
 
-        JButton blueCharacter1 = createCharacterButton("src/image/character/water.png", "water");
-        JButton blueCharacter2 = createCharacterButton("src/image/character/wade.png", "wade");
-        JButton blueCharacter3 = createCharacterButton("src/image/character/blue3.png", "blue3");
+        JButton blueCharacter1 = createCharacterButton("/image/character/water.png", "water");
+        JButton blueCharacter2 = createCharacterButton("/image/character/wade.png", "웨이드");
+        JButton blueCharacter3 = createCharacterButton("/image/character/sad.png", "슬픔이");
 
         bluePanel.add(blueCharacter1);
         bluePanel.add(blueCharacter2);
@@ -202,9 +204,9 @@ public class MainFrameBuilder extends JPanel{
         JPanel redPanel = new JPanel(new GridLayout(3, 1));
         redPanel.setBorder(BorderFactory.createLineBorder(Color.RED));
 
-        JButton redCharacter1 = createCharacterButton("src/image/character/fire.png", "fire");
-        JButton redCharacter2 = createCharacterButton("src/image/character/ember.png", "ember");
-        JButton redCharacter3 = createCharacterButton("src/image/character/red3.png", "red3");
+        JButton redCharacter1 = createCharacterButton("/image/character/fire.png", "fire");
+        JButton redCharacter2 = createCharacterButton("/image/character/ember.png", "엠버");
+        JButton redCharacter3 = createCharacterButton("/image/character/anger.png", "버럭이");
 
         redPanel.add(redCharacter1);
         redPanel.add(redCharacter2);
@@ -218,7 +220,20 @@ public class MainFrameBuilder extends JPanel{
     }
 
     // 버튼을 눌러 선택된 캐릭터의 이름 가져오기
-    private JButton createCharacterButton(String imagePath, String characterName) {
+    // 이미지 경로를 가져와 캐릭터 선택 버튼 생성
+    public JButton createCharacterButton(String imagePath, String characterName) {
+        // 클래스패스에서 리소스를 로드
+        URL url = this.getClass().getResource(imagePath);
+
+        if (url == null) {
+            System.err.println("리소스를 찾을 수 없습니다: " + imagePath);
+            return new JButton(characterName); // 기본 버튼 생성
+        }
+
+        // ImageIcon 생성
+        ImageIcon img = new ImageIcon(url);
+
+        // JButton 생성 및 설정
         JButton button = new JButton();
         button.setActionCommand(characterName); // 캐릭터 이름 설정
 
@@ -227,8 +242,7 @@ public class MainFrameBuilder extends JPanel{
         int buttonHeight = 100;
 
         // 이미지 로드 및 크기 조정
-        ImageIcon originalIcon = new ImageIcon(imagePath);
-        Image scaledImage = originalIcon.getImage().getScaledInstance(
+        Image scaledImage = img.getImage().getScaledInstance(
                 buttonWidth, buttonHeight, Image.SCALE_SMOOTH // 부드러운 스케일링
         );
         ImageIcon scaledIcon = new ImageIcon(scaledImage);
@@ -256,6 +270,5 @@ public class MainFrameBuilder extends JPanel{
 
         t_lobbyList.setCaretPosition(len);
     }
-
    
 }
