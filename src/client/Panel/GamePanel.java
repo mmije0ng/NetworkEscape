@@ -11,6 +11,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.ObjectOutputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -217,23 +218,39 @@ public class GamePanel extends JPanel {
     private void loadImages() {
         try {
             // 캐릭터 이미지 로드
-            characterImages.put("fire", new ImageIcon("./src/image/character/fire.png").getImage());
-            characterImages.put("water", new ImageIcon("./src/image/character/water.png").getImage());
-            characterImages.put("ember", new ImageIcon("./src/image/character/ember.png").getImage());
-            characterImages.put("wade", new ImageIcon("./src/image/character/wade.png").getImage());
+            characterImages.put("fire", createImageIcon("/image/character/fire.png").getImage());
+            characterImages.put("water", createImageIcon("/image/character/water.png").getImage());
+            characterImages.put("엠버", createImageIcon("/image/character/ember.png").getImage());
+            characterImages.put("웨이드", createImageIcon("/image/character/wade.png").getImage());
+            characterImages.put("버럭이", createImageIcon("/image/character/anger.png").getImage());
+            characterImages.put("슬픔이", createImageIcon("/image/character/sad.png").getImage());
 
-            doorImages.add(new ImageIcon("./src/image/door/door1.png").getImage());
-            doorImages.add(new ImageIcon("./src/image/door/door2.png").getImage());
-            doorImages.add(new ImageIcon("./src/image/door/door3.png").getImage());
-            doorImages.add(new ImageIcon("./src/image/door/door4.png").getImage());
+
+            doorImages.add(createImageIcon("/image/door/door1.png").getImage());
+            doorImages.add(createImageIcon("/image/door/door2.png").getImage());
+            doorImages.add(createImageIcon("/image/door/door3.png").getImage());
+            doorImages.add(createImageIcon("/image/door/door4.png").getImage());
 
             // 배경 및 블록 이미지 로드
-            backgroundImage = new ImageIcon("./src/image/background/stage1.jpg").getImage();
-            blockImage = new ImageIcon("./src/image/block/block2.png").getImage();
+            backgroundImage = createImageIcon("/image/background/stage1.png").getImage();
+            blockImage = createImageIcon("/image/block/block2.png").getImage();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("이미지 파일 로드 실패");
         }
+    }
+
+    // 이미지 경로를 가져와 ImageIcon 생성
+    public ImageIcon createImageIcon(String imagePath) {
+        // 클래스패스에서 리소스를 로드
+        URL url = this.getClass().getResource(imagePath);
+
+        if (url == null) {
+            System.err.println("리소스를 찾을 수 없습니다: " + imagePath);
+        }
+
+        // ImageIcon 생성
+        return new ImageIcon(url);
     }
 
     // 입력된 키가 유효한 키인지 확인

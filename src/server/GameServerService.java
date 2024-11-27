@@ -309,7 +309,7 @@ public class GameServerService {
                     .character(characterName)
                     .roomName(roomName)
                     .password(password)
-                    .textMessage("["+msg.getRoomName()+"] 의 새로운 참가자 입장, 닉네임: "+msg.getNickname()+" 캐릭터: "+msg.getCharacter())
+                    .textMessage("["+msg.getRoomName()+"] 의 새로운 참가자 입장, 닉네임: "+msg.getNickname()+", 캐릭터: "+msg.getCharacter())
                     .build()
             );
             rooms.add(roomName);
