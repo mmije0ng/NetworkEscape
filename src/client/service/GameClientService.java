@@ -165,13 +165,20 @@ public class GameClientService {
 
     // 서버로부터 받은 GameMsg 객체
     private void handleGameMessage(GameMsg gameMsg) {
-        // 게임 메시지 처리 로직
-        gameClient.getGameWithChatPanel().getGamePanel().updateOtherPlayerPosition(
-                gameMsg.getNickname(),
-                gameMsg.getCharacter(),
-                gameMsg.getX(),
-                gameMsg.getY()
-        );
+        switch(gameMsg.getCode()) {
+            case "CREATE_ITEM" -> gameClient.getGameWithChatPanel().getGamePanel().initializeItem(gameMsg.getItems());
+            case "GET_POINT" -> gameClient.getGameWithChatPanel().getGamePanel().updatePlayerPoint(gameMsg.getPoint());
+            case "LIMIT_MOVE" -> gameClient.getGameWithChatPanel().getGamePanel().stopMove(gameMsg.getTeam());
+            case "REMOVE_ITEM" -> gameClient.getGameWithChatPanel().getGamePanel().removeItem(gameMsg.getGotItem());
+
+//             게임 메시지 처리 로직
+            default -> gameClient.getGameWithChatPanel().getGamePanel().updateOtherPlayerPosition(
+                    gameMsg.getNickname(),
+                    gameMsg.getCharacter(),
+                    gameMsg.getX(),
+                    gameMsg.getY()
+            );
+        }
     }
 
     // 서버로 ChatMsg 타입 객체 전송
