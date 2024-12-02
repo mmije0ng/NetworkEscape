@@ -15,7 +15,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 public class GamePanel extends JPanel {
     // 메시지 전송 스레드 관련 변수
@@ -29,6 +32,17 @@ public class GamePanel extends JPanel {
     private int playerX; // 플레이어의 X 좌표
     private int playerY = getHeight() - 40; // 플레이어의 Y 좌표
     private boolean isJumping = false; // 플레이어가 점프 중인지 여부
+
+    //아이템 리스트{x, y, type}
+    private List<int[]> items = new ArrayList<>();
+    //점수
+    private int score = 0;
+    private Map<Integer, Image> itemImages = new HashMap<>(); //아이템 이미지
+
+    //이펙트 리스트{x,y}
+    private List<int[]> effects = new ArrayList<>();
+    //이펙트 이미지
+    private Map<Integer, Image> effectImages = new HashMap<>(); //아이템 획득 시 효과 이미지
 
     // 키 입력 상태 관리
     // 현재 눌린 키 상태를 저장
@@ -50,7 +64,7 @@ public class GamePanel extends JPanel {
 
     // 블록 위치 정보
     // 블록 리스트 {x, y, width, height}
-    private Map<Integer, List<int[]>> blocks = new HashMap<>();
+    private Map<Integer, List<int[]>> blockMap = new HashMap<>();
 
     private int remainingTime = 60; // 제한 시간 (초)
 
@@ -86,6 +100,13 @@ public class GamePanel extends JPanel {
         loadImages(); // 이미지 로드
         setFocusable(true); // 키보드 입력 활성화
 
+        initializePlayerPosition(); // 화면 크기 변경 시 플레이어 초기 위치 재설정
+        initializeBlocks(); // 블록 재설정
+
+        // 문 위치 조정
+        doorX = 660;
+        doorY = getHeight() - 495;
+
         // 주기적으로 포커스 유지
         Timer focusTimer = new Timer(100, e -> {
             if (!isFocusOwner()) {
@@ -93,17 +114,16 @@ public class GamePanel extends JPanel {
             }
         });
         focusTimer.start();
-
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
                 initializePlayerPosition(); // 화면 크기 변경 시 플레이어 초기 위치 재설정
                 initializeBlocks(); // 블록 재설정
-                
+
                 // 문 위치 조정
                 doorX = 660;
-                doorY  =  getHeight() - 498;
-                
+                doorY = getHeight() - 495;
+
                 repaint();
             }
         });
@@ -161,12 +181,13 @@ public class GamePanel extends JPanel {
         // 제한 시간이 종료되어 타이머 스레드가 종료되었다면 다시 시작
         remainingTime = 60-level*10; // 제한 시간 초기화
         isTimeRunning = true;
+
         startTimerThread();
     }
 
     // 맵 초기화
     private void initializeBlocks() {
-        blocks.clear(); // 기존 블록 제거
+        blockMap.clear(); // 기존 블록 제거
 
         List<int[]> level1Blocks = new ArrayList<>();
 
@@ -180,6 +201,7 @@ public class GamePanel extends JPanel {
         level1Blocks.add(new int[]{510, getHeight() - 40, 40, 40});
         level1Blocks.add(new int[]{710, getHeight() - 40, 40, 40});
         level1Blocks.add(new int[]{750, getHeight() - 40, 40, 40});
+
 
         // 두 번째 레벨
         level1Blocks.add(new int[]{640, getHeight() - 120, 40, 40});
@@ -238,7 +260,7 @@ public class GamePanel extends JPanel {
             level1Blocks.add(new int[]{i, getHeight() - 440, 40, 40});
         }
 
-        blocks.put(1, level1Blocks);
+        blockMap.put(1, level1Blocks);
 
         List<int[]> level2Blocks = new ArrayList<>();
         // 하단 레벨
@@ -311,8 +333,9 @@ public class GamePanel extends JPanel {
             level2Blocks.add(new int[]{i, getHeight() - 440, 40, 40});
         }
 
-        blocks.put(2, level2Blocks);
+        blockMap.put(2, level2Blocks);
 
+        sendRequestItem(blockMap.get(level));
     }
 
     // 게임에 필요한 이미지 로드
@@ -335,6 +358,13 @@ public class GamePanel extends JPanel {
             // 배경 및 블록 이미지 로드
             backgroundImage = createImageIcon("/image/background/stage"+level+".png").getImage();
             blockImage = createImageIcon("/image/block/block2.png").getImage();
+
+            //아이템 이미지 로드
+            itemImages.put(1, createImageIcon("/image/item/point.png").getImage());
+            itemImages.put(2, createImageIcon("/image/item/bomb.png").getImage());
+
+
+
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("이미지 파일 로드 실패");
@@ -362,8 +392,8 @@ public class GamePanel extends JPanel {
 
     // 키 입력 처리
     private void processKeys() {
-        // 문이 열렸으면 키 입력을 무시
-        if (isDoorOpen) {
+        // 문이 열렸거나 움직임이 제한되었으면 키 입력을 무시
+        if (isDoorOpen || isBlocked) {
             return;
         }
 
@@ -388,18 +418,69 @@ public class GamePanel extends JPanel {
             startJump();
         }
 
+        //아이템 충돌 체크
+        checkItemCollision(playerX, playerY);
+
+
         repaint();
     }
 
+
+    // 아이템 충돌 체크
+    private void checkItemCollision(int x, int y) {
+        if (items == null) return; // 맵이 초기화 되지 않았다면 return
+
+        for(int[] item : items){
+            int ix = item[0], iy = item[1], iWidth = 40, iHeight = 40;
+            if(x + 40 > ix && x < ix + iWidth && y + 40 > iy && y < iy + iHeight){
+                applyItemEffect(item);
+                System.out.println("아이템 충돌!");
+            }
+        }
+    }
+
+    // 아이템 효과 적용
+    private void applyItemEffect(int[] item) {
+        if (out != null) {
+            try {
+                GameMsg gameMsg = new GameMsg.Builder("APPLY_ITEM")
+                        .x(playerX)
+                        .y(playerY)
+                        .roomName(roomName)
+                        .team(team)
+                        .nickname(nickName)
+                        .character(character)
+                        .gotItem(item)
+                        .build();
+                out.writeObject(gameMsg);
+                out.flush();
+            } catch (IOException e) {
+                System.out.println("ItemRequest 오류> " + e.getMessage());
+            }
+        }
+    }
+
+    // 아이템 제거
+    public void removeItem(int[] item) {
+
+        System.out.println("아이템 제거 함수 작동");
+        int[] targetItem = new int[]{item[0], item[1], item[2]};
+        for(int i=0; i<items.size(); i++){
+            if(items.get(i)[0]==targetItem[0]
+                    &&items.get(i)[1]==targetItem[1]
+                    &&items.get(i)[2]==targetItem[2]){
+                items.remove(items.get(i));
+            }
+        }
+
+        repaint(); // 화면 갱신
+    }
+
+
     // 플레이어 초기 위치 설정
-    // 작동 안 됨.. 서버로 메시지 전송 해야 될 듯
     private void initializePlayerPosition() {
         playerX = ThreadLocalRandom.current().nextInt(5, 41); // 5에서 40 사이의 랜덤 값
-        playerY = getHeight() - 40; // 기본 Y 좌표
-//        int offset = 30; // 플레이어 간 간격
-//        if (!otherPlayers.isEmpty()) {
-//            playerX += otherPlayers.size() * offset;
-//        }
+        playerY = getHeight() + 40; // 기본 Y 좌표
     }
 
     // 플레이어가 블록 위에 서 있지 않은 경우 하강
@@ -433,7 +514,7 @@ public class GamePanel extends JPanel {
 
    // 플레이어가 블록 위에 서있는지 체크
     private boolean isStandingOnBlock(int x, int y) {
-        List<int[]> levelBlocks = blocks.get(level);
+        List<int[]> levelBlocks = blockMap.get(level);
         if (levelBlocks == null) return false; // 현재 레벨의 블록이 없다면 return false
 
         for (int[] block : levelBlocks) {
@@ -453,7 +534,7 @@ public class GamePanel extends JPanel {
 
     // 플레이어가 블록에 충돌했는지 체크
     private boolean isCollidesWithBlock(int x, int y) {
-        List<int[]> levelBlocks = blocks.get(level);
+        List<int[]> levelBlocks = blockMap.get(level);
         if (levelBlocks == null) return false; // 현재 레벨의 블록이 없다면 return false
 
         for (int[] block : levelBlocks) {
@@ -463,6 +544,22 @@ public class GamePanel extends JPanel {
             }
         }
         return false; // 충돌하지 않은 경우
+    }
+
+    public void stopMove(int team){
+        if(this.team!=team) {
+            isBlocked = true;
+
+            System.out.println("isBlocked set to true");
+
+            // 3초 후에 다시 false로 변경
+            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+            scheduler.schedule(() -> {
+                isBlocked = false;
+                System.out.println("isBlocked set to false");
+                scheduler.shutdown();
+            }, 3, TimeUnit.SECONDS);
+        }
     }
 
     // 점프 효과
@@ -547,6 +644,37 @@ public class GamePanel extends JPanel {
         }
     }
 
+    //서버에 아이템 생성 요청
+    public void sendRequestItem(List<int[]> blocks){
+        if (blocks == null || blocks.isEmpty()) {
+            System.err.println("블록 데이터가 유효하지 않습니다.");
+            return;
+        }
+
+        if (out != null) {
+            try {
+                GameMsg gameMsg = new GameMsg.Builder("REQUEST_ITEM")
+                        .x(playerX)
+                        .y(playerY)
+                        .character(character)
+                        .nickname(nickName)
+                        .roomName(roomName)
+                        .blocks(blocks)
+                        .build();
+                out.writeObject(gameMsg);
+                out.flush();
+            } catch (IOException e) {
+                System.out.println("ItemRequest 오류> " + e.getMessage());
+            }
+        }
+    }
+
+    //점수 업데이트
+    public void updatePlayerPoint(int point){
+        score += point;
+
+        repaint();
+    }
     // 같은 게임방에 위치한 플레이어들의 위치 업데이트
     public void updateOtherPlayerPosition(String nickname, String characterType, int x, int y) {
         otherPlayers.put(nickname, new int[]{x, y}); // 위치 정보 저장
@@ -593,7 +721,7 @@ public class GamePanel extends JPanel {
         int doorHeight = 60; // 문의 높이
 
         // 플레이어와 문 간의 허용 거리 (X, Y 좌표의 오차 허용 범위)
-        int xTolerance = 60;
+        int xTolerance = 10;
         int yTolerance = 10;
 
         // 플레이어와 문 간의 충돌 영역 계산
@@ -628,7 +756,6 @@ public class GamePanel extends JPanel {
                     ((Timer) e.getSource()).stop(); // 타이머 종료
                     isDoorOpen = true; // 문이 완전히 열림
                     isBlocked = false; // 플레이어 움직임 허용
-                    // 문이 열린 후 추가적인 로직이 필요하면 여기에 작성
                 }
             }
         });
@@ -652,7 +779,7 @@ public class GamePanel extends JPanel {
                 out.writeObject(gameMsg);
                 out.flush();
             } catch (IOException e) {
-                System.out.println("sendPlayerPosition 오류> " + e.getMessage());
+                System.out.println("sendNextMap 오류> " + e.getMessage());
             }
         }
     }
@@ -672,7 +799,7 @@ public class GamePanel extends JPanel {
                 out.writeObject(gameMsg);
                 out.flush();
             } catch (IOException e) {
-                System.out.println("sendPlayerPosition 오류> " + e.getMessage());
+                System.out.println("sendCurrentDoorIndex 오류> " + e.getMessage());
             }
         }
     }
@@ -707,11 +834,23 @@ public class GamePanel extends JPanel {
         g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
 
         // 현재 레벨의 블록만 그리기
-        List<int[]> levelBlocks = blocks.get(level);
+        List<int[]> levelBlocks = blockMap.get(level);
         if (levelBlocks != null) {
             for (int[] block : levelBlocks) {
                 g.drawImage(blockImage, block[0], block[1], block[2], block[3], this);
             }
+        }
+
+        // 아이템 렌더링
+        for (int[] item : items) {
+            Image itemImage = itemImages.get(item[2]);
+            g.drawImage(itemImage, item[0], item[1], 40, 40, this);
+        }
+
+        // 효과 렌더링
+        for (int[] effect : effects) {
+            Image effectImage = itemImages.get(effect[2]);
+            g.drawImage(effectImage, effect[0], effect[1], 40, 40, this);
         }
 
         // 문 그리기
@@ -720,7 +859,6 @@ public class GamePanel extends JPanel {
         // 현재 플레이어 캐릭터 그리기
         Image currentPlayerImage = characterImages.getOrDefault(character, characterImages.get("fire"));
         g.drawImage(currentPlayerImage, playerX, playerY, 40, 40, this);
-
 
         // 다른 플레이어 캐릭터 그리기
         for (Map.Entry<String, int[]> entry : otherPlayers.entrySet()) {
@@ -747,10 +885,20 @@ public class GamePanel extends JPanel {
         // 남은 시간 텍스트 그리기
         g.drawString(timeText, x, y);
 
+        // 점수 그리기
+        g.setColor(Color.PINK);
+        String scoreText = "점수: "+score;
+        g.drawString(scoreText, x, y+20);
     }
 
     public void setCurrentDoorIndex(int currentDoorIndex) {
         this.currentDoorIndex = currentDoorIndex;
         repaint();
     }
+
+    // 아이템 스폰
+    public void initializeItem(List<int[]> newItems) {
+        items.addAll(newItems);
+    }
+
 }

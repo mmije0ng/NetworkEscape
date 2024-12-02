@@ -10,6 +10,8 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 public class GameServerService {
     private int port; // 포트 번호
@@ -18,6 +20,7 @@ public class GameServerService {
 
     private Vector<ClientHandler> users = new Vector<>(); // 전체 참가자
     private List<String> rooms = new ArrayList<String>();
+
     private Map<String, Vector<ClientHandler>> roomMap = new HashMap<>(); // 게임방 참가자 관리 맵
     private Map<String, Map<Integer, Integer>> teamCountMap = new HashMap<>(); // 팀별 인원 관리 맵, (팀, 합계)
     private JTextArea t_display;
@@ -172,6 +175,7 @@ public class GameServerService {
         private String password; //방 비밀번호
         private String nickName; // 닉네임
         private int team; // 팀 (1,2)
+        private int point;  //포인트
         private int gameMode; // 게임모드 (1대1 모드이면 1, 2대2 모드이면 2)
         private String characterName; // 선택한 캐릭터 이름
 
@@ -185,6 +189,7 @@ public class GameServerService {
             this.team=1;
             this.gameMode=1;
             this.characterName="";
+            this.point=0;
         }
 
         @Override
@@ -221,7 +226,11 @@ public class GameServerService {
 
                     // 게임 시작 이후 데이터
                     else if (msg instanceof GameMsg gameMsg) {
-                        handleGameMsg(gameMsg);
+                        switch(gameMsg.getCode()){
+                            case "REQUEST_ITEM" -> handleITEM(gameMsg);
+                            case "APPLY_ITEM" -> handleAPPLY(gameMsg);
+                            default -> handleGameMsg(gameMsg);
+                        }
                     }
                 }
             } catch (ClassNotFoundException | IOException e) {
@@ -458,6 +467,76 @@ public class GameServerService {
             System.out.println("handleJoinRoom, mode: "+msg.getGameMode());
 
             checkStartCondition(); // 게임이 시작 가능한지 체크
+        }
+
+        //item 생성 요청 처리
+        private void handleITEM(GameMsg msg){
+            List<int[]> items = new ArrayList<>();
+            // 문 위치에는 아이템이 생성되지 않도록 필터링
+            List<int[]> blocks = msg.getBlocks().stream()
+                    .filter(block -> block[0] <= 620 && block[1] >= 105)
+                    .collect(Collectors.toList());
+
+            for(int i=0; i<5; i++){
+                int index = ThreadLocalRandom.current().nextInt(0, blocks.size());  //랜덤으로 한 블록 위에 생성되도록
+                int[] random_block=blocks.get(index);
+                int nx = random_block[0];   //랜덤 블록의 x좌표
+                int ny = random_block[1]-random_block[3];    //랜덤 블록의 y좌표 +(블록 세로 사이즈);
+                int type = ThreadLocalRandom.current().nextInt(1, 3); // 아이템 종류 (1 또는 2)
+                items.add(new int[]{nx,ny,type});
+            }
+            GameMsg gameMsg = new GameMsg.Builder("CREATE_ITEM")
+                    .roomName(msg.getRoomName())
+                    .items(items)
+                    .build();
+            System.out.println("아이템 생성됨");
+            broadcastToRoom(msg.getRoomName(),gameMsg);
+        }
+
+        //아이템 효과 적용 함수
+        private void handleAPPLY(GameMsg msg){
+            Vector<ClientHandler> roomUsers = roomMap.get(msg.getRoomName()); // 같은 방 유저들
+            int userTeam = msg.getTeam();   //아이템을 먹은 플레이어의 팀
+            for(ClientHandler user : roomUsers) {
+                switch (msg.getGotItem()[2]) {  //item의 타입
+                    case 1 -> getPoint(user,userTeam);
+                    case 2 -> limitMove(user,userTeam);
+                    default -> System.out.println("아이템 타입 오류");
+                }
+            }
+            //아이템 적용 후 제거 메시지
+            GameMsg gameMsg = new GameMsg.Builder("REMOVE_ITEM")
+                    .roomName(roomName)
+                    .team(team)
+                    .gotItem(msg.getGotItem())
+                    .build();
+            broadcastToRoom(roomName,gameMsg);
+        }
+        //점수 얻기
+        private void getPoint(ClientHandler user,int team){
+            //같은 팀이면 점수 얻기
+            if(user.team == team){
+                user.point += 10;
+                printDisplay("["+roomName+"] team: "+ this.team + "팀 점수 획득! 현재 점수: "+this.point);
+                GameMsg gameMsg = new GameMsg.Builder("GET_POINT")
+                        .roomName(roomName)
+                        .team(user.team)
+                        .point(10)  //10점
+                        .build();
+                user.send(gameMsg);
+            }
+
+        }
+        //움직임 제한하기
+        private void limitMove(ClientHandler user, int team){
+            if(user.team != team){
+                printDisplay("["+roomName+"] team: "+ this.team + "팀 움직임 제한: ");
+                GameMsg gameMsg = new GameMsg.Builder("LIMIT_MOVE")
+                        .roomName(roomName)
+                        .team(team)
+                        .build();
+                user.send(gameMsg);
+            }
         }
 
         // 게임 시작이 가능한지 체크
