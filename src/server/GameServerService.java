@@ -129,7 +129,6 @@ public class GameServerService {
         }
     }
 
-
     // 같은 방의 유저들에게 GameMsg 브로드캐스트
     private synchronized void broadcastToRoom(String roomName, GameMsg gameMsg) {
         Vector<ClientHandler> clients = roomMap.get(roomName);

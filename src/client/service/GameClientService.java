@@ -165,13 +165,26 @@ public class GameClientService {
 
     // 서버로부터 받은 GameMsg 객체
     private void handleGameMessage(GameMsg gameMsg) {
-        // 게임 메시지 처리 로직
-        gameClient.getGameWithChatPanel().getGamePanel().updateOtherPlayerPosition(
-                gameMsg.getNickname(),
-                gameMsg.getCharacter(),
-                gameMsg.getX(),
-                gameMsg.getY()
-        );
+        switch (gameMsg.getCode()) {
+            case "NEXT_MAP" -> {
+                // 로딩 화면으로 전환
+                System.out.println("NEXT_MAP 메시지 수신: " + gameMsg.getLevel());
+                startLoading(gameMsg);
+            }
+
+            case "DOOR" ->{
+                gameClient.getGameWithChatPanel().getGamePanel().setCurrentDoorIndex(gameMsg.getCurrentDoorIndex());
+            }
+
+            default -> {
+                gameClient.getGameWithChatPanel().getGamePanel().updateOtherPlayerPosition(
+                        gameMsg.getNickname(),
+                        gameMsg.getCharacter(),
+                        gameMsg.getX(),
+                        gameMsg.getY()
+                );
+            }
+        }
     }
 
     // 서버로 ChatMsg 타입 객체 전송
@@ -245,6 +258,12 @@ public class GameClientService {
     private void startRoom(ChatMsg msg){
         gameClient.startRoomPanel(this,msg);
         gameClient.printDisplay(msg.getTextMessage());
+    }
+
+    // 다음 맵으로 이동 전로딩 화면
+    private void startLoading(GameMsg msg){
+        System.out.println(msg.getLevel()+" 맵으로 전환");
+        gameClient.startLoadingPanel(msg, out);
     }
 
     public ObjectOutputStream getOutStream() {
