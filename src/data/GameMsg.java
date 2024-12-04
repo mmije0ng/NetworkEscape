@@ -6,9 +6,10 @@ import java.util.List;
 public class GameMsg extends BaseMsg {
     private final int x; // X 좌표
     private final int y; // Y 좌표
+    private final int level; // 현재 레벨
+    private final int currentDoorIndex; // 현재 열리는 문 인덱스
     private final List<int[]> blocks; // block 위에 아이템 생성을 위함(x,y,width,height)
     private final List<int[]> items; //Server가 생성한 아이템들(x,y,type)
-
     private final int[] gotItem; //유저가 획득한 아이템 1개의 정보
     private final int point;    //포인트
 
@@ -17,6 +18,8 @@ public class GameMsg extends BaseMsg {
         super(builder);
         this.x = builder.x;
         this.y = builder.y;
+        this.level = builder.level;
+        this.currentDoorIndex = builder.currentDoorIndex;
         this.blocks = builder.blocks;
         this.items = builder.items;
         this.point = builder.point;
@@ -32,6 +35,10 @@ public class GameMsg extends BaseMsg {
         return y;
     }
 
+    public int getLevel() {
+        return level;
+    }
+    public int getCurrentDoorIndex() {return currentDoorIndex;}
     public List<int[]> getBlocks(){
         return blocks;
     }
@@ -53,10 +60,13 @@ public class GameMsg extends BaseMsg {
     public static class Builder extends BaseMsg.Builder<Builder> {
         private int x;
         private int y;
+        private int level;
+        private int currentDoorIndex;
         private List<int[]> blocks;
         private List<int[]> items;
         private int point;
         private int[] gotItem;
+
         public Builder(String code) {
             super(code);
         }
@@ -68,6 +78,16 @@ public class GameMsg extends BaseMsg {
 
         public Builder y(int y) {
             this.y = y;
+            return this;
+        }
+
+        public Builder level(int level) {
+            this.level = level;
+            return this;
+        }
+
+        public Builder currentDoorIndex(int currentDoorIndex) {
+            this.currentDoorIndex = currentDoorIndex;
             return this;
         }
 

@@ -11,6 +11,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 public class GameServerService {
     private int port; // 포트 번호
@@ -138,7 +139,6 @@ public class GameServerService {
             }
         }
     }
-
 
     // 같은 방의 유저들에게 GameMsg 브로드캐스트
     private synchronized void broadcastToRoom(String roomName, GameMsg gameMsg) {
@@ -480,7 +480,11 @@ public class GameServerService {
         //item 생성 요청 처리
         private void handleITEM(GameMsg msg){
             List<int[]> items = new ArrayList<>();
-            List<int[]> blocks = msg.getBlocks();
+            // 문 위치에는 아이템이 생성되지 않도록 필터링
+            List<int[]> blocks = msg.getBlocks().stream()
+                    .filter(block -> block[0] <= 620 && block[1] >= 105)
+                    .collect(Collectors.toList());
+
             for(int i=0; i<5; i++){
                 int index = ThreadLocalRandom.current().nextInt(0, blocks.size());  //랜덤으로 한 블록 위에 생성되도록
                 int[] random_block=blocks.get(index);

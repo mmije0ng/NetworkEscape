@@ -3,12 +3,15 @@ package client;
 import client.service.GameClientService;
 import data.ChatMsg;
 import client.Panel.*;
+import data.GameMsg;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
 import java.awt.*;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.util.Stack;
 
 public class GameClient extends JFrame {
     private GameClientService gameClientService;
@@ -16,11 +19,13 @@ public class GameClient extends JFrame {
     private RoomPanel roomPanel;
     private LoginPanel loginPanel;
     private MainPanel mainPanel;
-    private GamePanel gamePanel;
+    private LoadingPanel loadingPanel;
     private JTextPane t_display;
     private DefaultStyledDocument document;
 
     private GameWithChatPanel gameWithChatPanel;
+
+    private Stack<GameWithChatPanel> gamePanelStack = new Stack<>(); // GameWithChatPanel 스택
 
     public GameClient(String serverAddress, int serverPort) {
         super("Network Escape");
@@ -94,31 +99,67 @@ public class GameClient extends JFrame {
         System.out.println("startRoomPanel msg code: "+msg.getCode()+", characterName: "+msg.getCharacter());
     }
 
-   // 게임 시작 패널 -> 게임 패널+채팅 패널로 전환
+   // NEXT_MAP 메시지를 받아 로딩 화면 표시
+   public void startLoadingPanel(GameMsg msg, OutputStream out) {
+       // 기존 GameWithChatPanel 스택에 저장
+       if (gameWithChatPanel != null) {
+           gamePanelStack.push(gameWithChatPanel);
+       }
+
+       // 로딩 패널 표시
+       getContentPane().removeAll();
+       loadingPanel = new LoadingPanel();
+       add(loadingPanel);
+       revalidate();
+       repaint();
+
+       // 일정 시간 후 로딩 화면 종료 및 GameWithChatPanel 복원
+       Timer timer = new Timer(3000, e -> {
+           if (!gamePanelStack.isEmpty()) {
+               gameWithChatPanel = gamePanelStack.pop(); // 스택에서 꺼내기
+               getContentPane().removeAll();
+               add(gameWithChatPanel);
+
+               gameWithChatPanel.getGamePanel().initializeNextMap(msg.getLevel());
+
+               revalidate();
+               repaint();
+           }
+       });
+       timer.setRepeats(false); // 한 번만 실행
+       timer.start();
+   }
+
+    // 게임 시작 패널 -> 게임 패널+채팅 패널로 전환
     public void startGameWithChatPanel(ChatMsg msg, ObjectOutputStream out) {
         getContentPane().removeAll();
 
         setSize(1100, 600);
 
-        // 게임 패널 생성
+        // 새로운 GamePanel 생성
         GamePanel gamePanel = new GamePanel(
                 msg.getNickname(),
                 msg.getCharacter(),
                 msg.getRoomName(),
                 msg.getGameMode(),
                 msg.getTeam(),
+                1, // 처음 시작 레벨은 1
                 gameClientService.getOutStream()
         );
 
-        // 채팅 패널 생성
-        ChatPanel chatPanel = new ChatPanel( msg.getRoomName(), msg.getNickname(), msg.getCharacter(), msg.getGameMode(), msg.getTeam(), out);
+        // 새로운 ChatPanel 생성
+        ChatPanel chatPanel = new ChatPanel(msg.getRoomName(), msg.getNickname(), msg.getCharacter(), msg.getGameMode(), msg.getTeam(), out);
 
-        // 게임+채팅 패널 생성 & 추가
+        // 기존 GameWithChatPanel 스택에 저장
+        if (gameWithChatPanel != null) {
+            gamePanelStack.push(gameWithChatPanel);
+        }
+
+        // 새로운 GameWithChatPanel 생성
         gameWithChatPanel = new GameWithChatPanel(gamePanel, chatPanel);
         add(gameWithChatPanel);
 
         gamePanel.requestFocusInWindow();
-
         revalidate();
         repaint();
     }
