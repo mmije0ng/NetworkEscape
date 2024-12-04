@@ -956,10 +956,10 @@ public class GamePanel extends JPanel {
         }
 
         // 효과 렌더링
-        for (int[] effect : effects) {
-            Image effectImage = itemImages.get(effect[2]);
-            g.drawImage(effectImage, effect[0], effect[1], 40, 40, this);
-        }
+//        for (int[] effect : effects) {
+//            Image effectImage = itemImages.get(effect[2]);
+//            g.drawImage(effectImage, effect[0], effect[1], 40, 40, this);
+//        }
 
         // 문 그리기
         g.drawImage(doorImages.get(currentDoorIndex), doorX, doorY, 60, 60, this);
@@ -1007,6 +1007,10 @@ public class GamePanel extends JPanel {
     // 아이템 스폰
     public void initializeItem(List<int[]> newItems) {
         items.addAll(newItems);
+    }
+
+    public void removeAllItem(){
+
     }
 
 }

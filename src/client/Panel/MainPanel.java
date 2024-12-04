@@ -260,14 +260,48 @@ public class MainPanel extends JPanel{
 
     public void printLobbyList(ChatMsg msg){
         lobbyListPanel.removeAll();
-        for(String room : msg.getRoomList()){
-            JPanel roomPanel = new JPanel(new BorderLayout());
-            JTextArea t_roomName = new JTextArea("방 이름: " + room);
-            JButton b_enter = new JButton("방 참가");
-            System.out.println("로비리스트 업데이트: " + room);
-            roomPanel.add(t_roomName, BorderLayout.CENTER);
-            roomPanel.add(b_enter, BorderLayout.EAST);
-            lobbyListPanel.add(roomPanel);
+        //현재 방이 없으면 리턴
+        if(msg.getRoomList()!=null) {
+            for (String room : msg.getRoomList()) {
+                JPanel roomPanel = new JPanel(new BorderLayout());
+                JTextArea t_roomName = new JTextArea("방 이름: " + room);
+                JButton b_enter = new JButton("방 참가");
+                b_enter.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        // 방 이름을 가져오기 위한 입력창 표시
+                        String roomPassword = JOptionPane.showInputDialog(
+                                lobbyListPanel,
+                                "방 비밀번호를 입력하세요:",
+                                "비밀번호 입력",
+                                JOptionPane.QUESTION_MESSAGE
+                        );
+
+                        // 입력값이 null이 아니면 서비스 호출
+                        if (roomPassword != null && !roomPassword.trim().isEmpty()) {
+                            service.enterRoom(
+                                    userName, // 사용자의 이름
+                                    room,     // 선택된 방 이름
+                                    roomPassword, // 입력한 비밀번호
+                                    selectedCharacter, // 선택된 캐릭터
+                                    playmode // 선택된 플레이 모드
+                            );
+                        } else {
+                            JOptionPane.showMessageDialog(
+                                    lobbyListPanel,
+                                    "비밀번호를 입력하지 않았습니다!",
+                                    "경고",
+                                    JOptionPane.WARNING_MESSAGE
+                            );
+                        }
+                    }
+
+                });
+                System.out.println("로비리스트 업데이트: " + room);
+                roomPanel.add(t_roomName, BorderLayout.CENTER);
+                roomPanel.add(b_enter, BorderLayout.EAST);
+                lobbyListPanel.add(roomPanel);
+            }
         }
 
         lobbyListPanel.revalidate(); // 레이아웃 다시 계산

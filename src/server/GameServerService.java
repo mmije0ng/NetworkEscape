@@ -306,17 +306,25 @@ public class GameServerService {
 //            team = msg.getTeam();
             gameMode = msg.getGameMode();
             characterName = msg.getCharacter();
-
             //같은 이름의 방이 있으면 방을 생성하지 못하도록
-            for(ClientHandler user : users){
-                if(user.roomName.equals(msg.getRoomName())&&user!=this){
-                    System.out.println(roomName);
+            for(String room : rooms){
+                if(room.equals(msg.getRoomName())){
+                    System.out.println("이미 존재하는 방 이름");
                     send(new ChatMsg.Builder("CREATE_FAIL")
                             .roomName(roomName)
                             .build());
                     return;
                 }
             }
+//            for(ClientHandler user : users){
+//                if(user.roomName.equals(msg.getRoomName())&&user!=this){
+//                    System.out.println(roomName);
+//                    send(new ChatMsg.Builder("CREATE_FAIL")
+//                            .roomName(roomName)
+//                            .build());
+//                    return;
+//                }
+//            }
             //같은 이름의 방이 없으면 방 생성
             addClientToRoom(roomName, this); // 같은 이름의 게임방에 클라이언트 충가
             send(new ChatMsg.Builder("CREATE_SUCCESS")
