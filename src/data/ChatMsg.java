@@ -1,6 +1,7 @@
 package data;
 
 import javax.swing.*;
+import java.util.List;
 
 // 채팅 메시지 & 게임 시작 전 메시지 클래스
 public class ChatMsg extends BaseMsg {
@@ -9,6 +10,7 @@ public class ChatMsg extends BaseMsg {
     private final String fileName;   // 파일 이름
     private final long fileSize;     // 파일 크기
     private final String textMessage; // 텍스트 메시지
+    private final List<String> roomList;
 
     private ChatMsg(Builder builder) {
         super(builder);
@@ -17,6 +19,7 @@ public class ChatMsg extends BaseMsg {
         this.fileName = builder.fileName;
         this.fileSize = builder.fileSize;
         this.textMessage = builder.textMessage;
+        this.roomList = builder.roomList;
     }
 
     // Getters
@@ -40,10 +43,14 @@ public class ChatMsg extends BaseMsg {
     public String getTextMessage() {
         return textMessage;
     }
+    public List<String> getRoomList(){
+        return roomList;
+    }
 
     public void setImage(ImageIcon image) {
         this.image = image;
     }
+
 
     // Builder 클래스
     public static class Builder extends BaseMsg.Builder<Builder> {
@@ -52,6 +59,7 @@ public class ChatMsg extends BaseMsg {
         private String fileName;
         private long fileSize;
         private String textMessage; // 텍스트 메시지
+        private List<String> roomList;
 
         public Builder(String code) {
             super(code);
@@ -79,6 +87,10 @@ public class ChatMsg extends BaseMsg {
 
         public Builder textMessage(String textMessage) {
             this.textMessage = textMessage;
+            return this;
+        }
+        public Builder roomList(List<String> roomList){
+            this.roomList = roomList;
             return this;
         }
 

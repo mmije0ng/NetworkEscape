@@ -94,18 +94,26 @@ public class GameServerService {
                 teamCountMap.get(roomName).merge(client.team, -1, Integer::sum);
             }
         }
+
     }
     //방 생성 시 모든 유저에게 알림
     private synchronized void broadcastAllUpdatedRoom(List<String> rooms){
-        for(ClientHandler user : users){
-            for(String room : rooms){
+        if(rooms.isEmpty()){
+            for(ClientHandler user : users){
                 user.send(new ChatMsg.Builder("UPDATE_ROOMLIST")
-                        .roomName(room)
                         .build()
                 );
-                System.out.println(user.getName() + "에게 "+ room +"정보");
             }
+            return;
         }
+
+        for(ClientHandler user : users){
+            user.send(new ChatMsg.Builder("UPDATE_ROOMLIST")
+                    .roomList(rooms)
+                    .build()
+            );
+        }
+
     }
 
     // 같은 방의 유저들에게 ChatMsg 브로드캐스트

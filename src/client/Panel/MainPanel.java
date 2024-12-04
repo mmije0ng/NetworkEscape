@@ -1,9 +1,9 @@
 package client.Panel;
 
 import client.service.GameClientService;
+import data.ChatMsg;
 
 import javax.swing.*;
-import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -13,12 +13,12 @@ import java.net.URL;
 
 public class MainPanel extends JPanel{
     public JTextField t_lobbyName,t_lobbyPassword;
-    public JTextArea t_lobbyList;
+    public JPanel lobbyListPanel;
     public JButton b_playMode1, b_playMode2, b_createLobby, b_logout,b_enterLobby;
 
-    public JButton blueCharacter1,blueCharacter2,blueCharacter3;
-    public JButton redCharacter1,redCharacter2,redCharacter3;
-    private DefaultStyledDocument document;
+//    public JButton blueCharacter1,blueCharacter2,blueCharacter3;
+//    public JButton redCharacter1,redCharacter2,redCharacter3;
+//    private DefaultStyledDocument document;
     private GameClientService service;
 
     private int playmode;
@@ -48,7 +48,7 @@ public class MainPanel extends JPanel{
         this.setVisible(true);
     }
     private JPanel createLobbyPanel(){
-        document = new DefaultStyledDocument();
+//        document = new DefaultStyledDocument();
 
         JPanel panel = new JPanel(new GridLayout(0,1));
         JPanel topPanel = new JPanel();
@@ -56,12 +56,11 @@ public class MainPanel extends JPanel{
         t_lobbyName = new JTextField(10);
         t_lobbyPassword = new JTextField(10);
 
-        t_lobbyList = new JTextArea(document);
-        JScrollPane scroll=new JScrollPane(t_lobbyList);
+        lobbyListPanel = new JPanel(new GridLayout(15,1));
+//        JScrollPane scroll=new JScrollPane(lobbyListPanel);
 
-        t_lobbyList.setEditable(false);
         bottomPanel.add(new JLabel("방 목록"),BorderLayout.NORTH);
-        bottomPanel.add(scroll,BorderLayout.CENTER);
+        bottomPanel.add(lobbyListPanel,BorderLayout.CENTER);
 
 
         topPanel.setLayout(new GridBagLayout());
@@ -259,16 +258,20 @@ public class MainPanel extends JPanel{
         return button;
     }
 
-    public void printLobbyList(String lobbyName){
-        int len = t_lobbyList.getDocument().getLength();
-
-        try {
-            document.insertString(len, lobbyName + "\n", null);
-        } catch (BadLocationException e) {
-            e.printStackTrace();
+    public void printLobbyList(ChatMsg msg){
+        lobbyListPanel.removeAll();
+        for(String room : msg.getRoomList()){
+            JPanel roomPanel = new JPanel(new BorderLayout());
+            JTextArea t_roomName = new JTextArea("방 이름: " + room);
+            JButton b_enter = new JButton("방 참가");
+            System.out.println("로비리스트 업데이트: " + room);
+            roomPanel.add(t_roomName, BorderLayout.CENTER);
+            roomPanel.add(b_enter, BorderLayout.EAST);
+            lobbyListPanel.add(roomPanel);
         }
 
-        t_lobbyList.setCaretPosition(len);
+        lobbyListPanel.revalidate(); // 레이아웃 다시 계산
+        lobbyListPanel.repaint();    // 화면 다시 그리기
     }
    
 }
