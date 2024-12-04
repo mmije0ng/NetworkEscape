@@ -25,10 +25,10 @@ public class GameClientService {
     }
 
     // 서버로 연결 요청
-    public void createRoom(String nickName, String roomName,String password, String characterName, int mode) {
-        System.out.println("GameClientService createRoom characterName: "+characterName);
+    public void createRoom(String nickName, String roomName, String password, String characterName, int mode) {
+        System.out.println("GameClientService createRoom characterName: " + characterName);
 
-        if(characterName==null){
+        if (characterName == null) {
             JOptionPane.showMessageDialog(
                     null,        // 부모 컴포넌트 (null일 경우 화면 중앙에 표시)
                     "게임 캐릭터를 선택해 주세요",   // 메시지 내용
@@ -39,13 +39,13 @@ public class GameClientService {
         }
 
         // 서버로 LOGIN 코드 전송
-        sendCreate(nickName, roomName,password, characterName, mode);
+        sendCreate(nickName, roomName, password, characterName, mode);
     }
 
-    public void enterRoom(String nickName, String roomName, String password,String characterName, int mode){
-        System.out.println("GameClientService enterRoom characterName: "+characterName);
+    public void enterRoom(String nickName, String roomName, String password, String characterName, int mode) {
+        System.out.println("GameClientService enterRoom characterName: " + characterName);
 
-        if(characterName==null){
+        if (characterName == null) {
             JOptionPane.showMessageDialog(
                     null,        // 부모 컴포넌트 (null일 경우 화면 중앙에 표시)
                     "게임 캐릭터를 선택해 주세요",   // 메시지 내용
@@ -55,13 +55,13 @@ public class GameClientService {
             return;
         }
 
-        sendEnter(nickName,roomName,password,characterName, mode);
+        sendEnter(nickName, roomName, password, characterName, mode);
     }
 
     //유저 로그인 - 로비 생성 화면으로 이동
-    public void connectToServer(String serverAddress,  int serverPort, String userName){
+    public void connectToServer(String serverAddress, int serverPort, String userName) {
         try {
-            System.out.println("connectToServer : "+userName);
+            System.out.println("connectToServer : " + userName);
             socket = new Socket(serverAddress, serverPort);
             out = new ObjectOutputStream(new BufferedOutputStream(socket.getOutputStream()));
             out.flush();
@@ -76,17 +76,18 @@ public class GameClientService {
         }
 
 
-
     }
-    // 유저 로그아웃 - 로그인 화면으로 이동
-    public void disconnect(String nickName){
 
-        ChatMsg chatMsg=new ChatMsg.Builder("LOGOUT")
+    // 유저 로그아웃 - 로그인 화면으로 이동
+    public void disconnect(String nickName) {
+
+        ChatMsg chatMsg = new ChatMsg.Builder("LOGOUT")
                 .nickname(nickName)
                 .build();
         send(chatMsg);  //서버로 LOGOUT 코드 전송
 
     }
+
     //대기방 나가기
     public void exitRoom(String roomName, String nickName, String characterName, int mode, int team) {
         ChatMsg chatMsg = new ChatMsg.Builder("EXIT")
@@ -144,7 +145,7 @@ public class GameClientService {
         switch (msg.getCode()) {
             case "LOGIN_SUCCESS" -> startMain(msg);
 //            case "LOGIN_FAIL" -> 닉네임이 중복된다는 알람
-            case "LOGOUT_SUCCESS" -> gameClient.startLoginPanel(serverAddress,serverPort);
+            case "LOGOUT_SUCCESS" -> gameClient.startLoginPanel(serverAddress, serverPort);
             case "CREATE_SUCCESS" -> startRoom(msg);
             case "CREATE_FAIL" -> System.out.println("방 생성 실패");
             case "ENTER_SUCCESS" -> startRoom(msg);
@@ -153,10 +154,12 @@ public class GameClientService {
             case "START_GAME" -> startGame(msg); // 게임 시작
             case "UPDATE_ROOMLIST" -> gameClient.printRoom(msg);
             case "WAITING" -> gameClient.printDisplay("게임 시작 대기 중입니다..."); // 게임 대기
-            case "TX_STRING" -> gameClient.getGameWithChatPanel().getChatPanel().printDisplay("["+msg.getNickname()+"]: "+msg.getTextMessage()); // 텍스트 채팅 메시지
-            case "TX_FILE" -> gameClient.getGameWithChatPanel().getChatPanel().printDisplay("["+msg.getNickname()+"] 파일: " + msg.getFileName() + " (" + msg.getFileSize() + " bytes)"); // 파일 채팅 메시지
+            case "TX_STRING" ->
+                    gameClient.getGameWithChatPanel().getChatPanel().printDisplay("[" + msg.getNickname() + "]: " + msg.getTextMessage()); // 텍스트 채팅 메시지
+            case "TX_FILE" ->
+                    gameClient.getGameWithChatPanel().getChatPanel().printDisplay("[" + msg.getNickname() + "] 파일: " + msg.getFileName() + " (" + msg.getFileSize() + " bytes)"); // 파일 채팅 메시지
             case "TX_IMAGE" -> { // 이미지 채팅 메시지
-                gameClient.getGameWithChatPanel().getChatPanel().printDisplay("["+msg.getNickname()+"]: 이미지 " + msg.getFileName());
+                gameClient.getGameWithChatPanel().getChatPanel().printDisplay("[" + msg.getNickname() + "]: 이미지 " + msg.getFileName());
                 gameClient.getGameWithChatPanel().getChatPanel().printDisplay(msg.getImage());
             }
             default -> gameClient.printDisplay("알 수 없는 메시지 유형 수신: " + msg.getCode());
@@ -165,17 +168,28 @@ public class GameClientService {
 
     // 서버로부터 받은 GameMsg 객체
     private void handleGameMessage(GameMsg gameMsg) {
-        // 게임 메시지 처리 로직
-        gameClient.getGameWithChatPanel().getGamePanel().updateOtherPlayerPosition(
-                gameMsg.getNickname(),
-                gameMsg.getCharacter(),
-                gameMsg.getX(),
-                gameMsg.getY()
-        );
+
+        switch (gameMsg.getCode()) {
+            case "CREATE_ITEM" ->
+                    gameClient.getGameWithChatPanel().getGamePanel().initializeItem(gameMsg.getItems());
+            case "GET_POINT" ->
+                    gameClient.getGameWithChatPanel().getGamePanel().updatePlayerPoint(gameMsg.getPoint());
+            case "LIMIT_MOVE" -> gameClient.getGameWithChatPanel().getGamePanel().stopMove(gameMsg.getTeam());
+            case "REMOVE_ITEM" -> gameClient.getGameWithChatPanel().getGamePanel().removeItem(gameMsg.getGotItem());
+            case "NEXT_MAP" -> gameClient.startLoadingPanel(gameMsg, out);
+            case "DOOR" -> gameClient.getGameWithChatPanel().getGamePanel().setCurrentDoorIndex(gameMsg.getCurrentDoorIndex());
+
+            default -> gameClient.getGameWithChatPanel().getGamePanel().updateOtherPlayerPosition(
+                    gameMsg.getNickname(),
+                    gameMsg.getCharacter(),
+                    gameMsg.getX(),
+                    gameMsg.getY()
+            );
+        }
     }
 
     // 서버로 ChatMsg 타입 객체 전송
-    public void send(ChatMsg msg) {
+    public void send (ChatMsg msg){
         try {
             out.writeObject(msg);
             out.flush();
@@ -185,7 +199,7 @@ public class GameClientService {
     }
 
     // 서버로 CREATE 코드 전송
-    private void sendCreate(String nickName, String roomName,String password, String characterName, int mode) {
+    private void sendCreate (String nickName, String roomName, String password, String characterName,int mode){
         ChatMsg chatMsg = new ChatMsg.Builder("CREATE")
                 .nickname(nickName)
                 .roomName(roomName)
@@ -195,8 +209,9 @@ public class GameClientService {
                 .build();
         send(chatMsg);
     }
-    private void sendEnter(String nickName, String roomName, String password, String characterName, int mode){
-        ChatMsg chatMsg=new ChatMsg.Builder("ENTER")
+
+    private void sendEnter (String nickName, String roomName, String password, String characterName,int mode){
+        ChatMsg chatMsg = new ChatMsg.Builder("ENTER")
                 .nickname(nickName)
                 .roomName(roomName)
                 .password(password)
@@ -207,7 +222,7 @@ public class GameClientService {
         send(chatMsg);
     }
 
-    private void sendLOGIN(String nickName){
+    private void sendLOGIN (String nickName){
         ChatMsg chatMsg = new ChatMsg.Builder("LOGIN")
                 .nickname(nickName)
                 .build();
@@ -215,7 +230,7 @@ public class GameClientService {
     }
 
     // 게임 시작 요청
-    public void requestStartGame(String nickName, String roomName, String characterName, int mode, int team) {
+    public void requestStartGame (String nickName, String roomName, String characterName,int mode, int team){
         ChatMsg chatMsg = new ChatMsg.Builder("JOIN_ROOM")
                 .nickname(nickName)
                 .roomName(roomName)
@@ -224,30 +239,30 @@ public class GameClientService {
                 .team(team)
                 .build();
 
-        System.out.println("JOIN_ROOM, roomName: "+roomName+", gameMode: "+mode);
+        System.out.println("JOIN_ROOM, roomName: " + roomName + ", gameMode: " + mode);
 
         send(chatMsg); // 서버로 메시지 전송
     }
 
     // 서버로부터 START_GAME 메시지 수신 시 게임 시작
-    private void startGame(ChatMsg msg) {
-        System.out.println("게임 시작, 코드: "+msg.getCode() + " 캐릭터: "+msg.getCharacter());
+    private void startGame (ChatMsg msg){
+        System.out.println("게임 시작, 코드: " + msg.getCode() + " 캐릭터: " + msg.getCharacter());
         gameClient.startGameWithChatPanel(msg, out); // GameClient에서 GamePanel로 전환
     }
 
     //메인화면
-    private void startMain(ChatMsg msg){
+    private void startMain (ChatMsg msg){
         System.out.println("메인화면 시작");
-        gameClient.startMainPanel(this,msg);
+        gameClient.startMainPanel(this, msg);
     }
 
     //대기방 화면
-    private void startRoom(ChatMsg msg){
-        gameClient.startRoomPanel(this,msg);
+    private void startRoom (ChatMsg msg){
+        gameClient.startRoomPanel(this, msg);
         gameClient.printDisplay(msg.getTextMessage());
     }
 
-    public ObjectOutputStream getOutStream() {
+    public ObjectOutputStream getOutStream () {
         return out;
     }
 }
