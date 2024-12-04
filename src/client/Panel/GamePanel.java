@@ -84,6 +84,7 @@ public class GamePanel extends JPanel {
     private int currentDoorIndex = 0; // 현재 문 이미지 인덱스
 
     private volatile boolean isBlocked = false; // 플레이어가 움직임이 차단되었는지 여부
+    private Thread nextMapThread; // 다음 맵으로 이동 가능한 지 체크 스ㅔ드
 
     public GamePanel(String nickName, String character, String roomName, Integer mode, Integer team, Integer level, ObjectOutputStream out) {
         this.nickName = nickName;
@@ -185,6 +186,12 @@ public class GamePanel extends JPanel {
         isTimeRunning = true;
 
         startTimerThread();
+
+        // nextMapThread가 중지되었거나 존재하지 않을 경우 새로 시작
+        if (nextMapThread == null || !nextMapThread.isAlive()) {
+            System.out.println("initializeNextMap nextMapThread 시작");
+            startNextMapThread(); // 새 스레드 시작
+        }
 
         System.out.println(this.level+"레벨 맵 시작");
     }
@@ -769,6 +776,13 @@ public class GamePanel extends JPanel {
                 if (remainingTime == 0) {
                     isTimeRunning = false;
                     System.out.println(level+"맵 제한 시간 종료");
+
+//                    if(!isDoorOpen){
+//                        startDoorAnimation(null);
+//                        sendNextMap(level+1);
+//                    }
+//
+//                    timerThread = null;
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt(); // 스레드 중단
@@ -881,12 +895,23 @@ public class GamePanel extends JPanel {
     }
 
     // 현재 맵의 게임이 끝나고 다음 맵으로 전환할 수 있는지 검사
+    // startNextMapThread 수정
     private void startNextMapThread() {
-        Thread nextMapThread = new Thread(() -> {
+        if (nextMapThread != null && nextMapThread.isAlive()) {
+            return; // 이미 실행 중인 경우 중복 실행 방지
+        }
+
+        nextMapThread = new Thread(() -> {
             while (true) {
                 try {
                     // 타이머 종료 또는 문 열림 여부 확인
                     if (isNextMapConditionMet()) {
+                        System.out.println("isNextMapConditionMet 검사");
+
+                        System.out.println("isDoorOpen: " + isDoorOpen);
+                        System.out.println("timerThread null 여부: " + (timerThread == null));
+                        System.out.println("timerThread Alive: " + (timerThread != null && timerThread.isAlive()));
+
                         prepareNextMap(); // 다음 맵 준비 및 전환
                         break; // 루프 종료
                     }
@@ -898,7 +923,7 @@ public class GamePanel extends JPanel {
             }
         });
 
-        nextMapThread.setDaemon(true); // 데몬 스레드로 설정 (프로그램 종료 시 자동 종료)
+        nextMapThread.setDaemon(true); // 데몬 스레드로 설정
         nextMapThread.start(); // 스레드 시작
     }
 
