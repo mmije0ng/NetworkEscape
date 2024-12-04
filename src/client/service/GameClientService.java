@@ -176,13 +176,8 @@ public class GameClientService {
                     gameClient.getGameWithChatPanel().getGamePanel().updatePlayerPoint(gameMsg.getPoint());
             case "LIMIT_MOVE" -> gameClient.getGameWithChatPanel().getGamePanel().stopMove(gameMsg.getTeam());
             case "REMOVE_ITEM" -> gameClient.getGameWithChatPanel().getGamePanel().removeItem(gameMsg.getGotItem());
-            case "NEXT_MAP" -> {
-                // 로딩 화면으로 전환
-                System.out.println("NEXT_MAP 메시지 수신: " + gameMsg.getLevel());
-                startLoading(gameMsg);
-            }
-            case "DOOR" ->
-                    gameClient.getGameWithChatPanel().getGamePanel().setCurrentDoorIndex(gameMsg.getCurrentDoorIndex());
+            case "NEXT_MAP" -> gameClient.startLoadingPanel(gameMsg, out);
+            case "DOOR" -> gameClient.getGameWithChatPanel().getGamePanel().setCurrentDoorIndex(gameMsg.getCurrentDoorIndex());
 
             default -> gameClient.getGameWithChatPanel().getGamePanel().updateOtherPlayerPosition(
                     gameMsg.getNickname(),
@@ -265,12 +260,6 @@ public class GameClientService {
     private void startRoom (ChatMsg msg){
         gameClient.startRoomPanel(this, msg);
         gameClient.printDisplay(msg.getTextMessage());
-    }
-
-    // 다음 맵으로 이동 전로딩 화면
-    private void startLoading (GameMsg msg){
-        System.out.println(msg.getLevel() + " 맵으로 전환");
-        gameClient.startLoadingPanel(msg, out);
     }
 
     public ObjectOutputStream getOutStream () {
