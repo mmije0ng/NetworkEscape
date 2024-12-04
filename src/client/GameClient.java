@@ -56,7 +56,7 @@ public class GameClient extends JFrame {
     }
 
     public void printRoom(ChatMsg msg){
-        mainPanel.printLobbyList(msg.getRoomName());
+        mainPanel.printLobbyList(msg);
     }
 
     // 텍스트 메시지 출력

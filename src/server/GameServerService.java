@@ -95,18 +95,26 @@ public class GameServerService {
                 teamCountMap.get(roomName).merge(client.team, -1, Integer::sum);
             }
         }
+
     }
     //방 생성 시 모든 유저에게 알림
     private synchronized void broadcastAllUpdatedRoom(List<String> rooms){
-        for(ClientHandler user : users){
-            for(String room : rooms){
+        if(rooms.isEmpty()){
+            for(ClientHandler user : users){
                 user.send(new ChatMsg.Builder("UPDATE_ROOMLIST")
-                        .roomName(room)
                         .build()
                 );
-                System.out.println(user.getName() + "에게 "+ room +"정보");
             }
+            return;
         }
+
+        for(ClientHandler user : users){
+            user.send(new ChatMsg.Builder("UPDATE_ROOMLIST")
+                    .roomList(rooms)
+                    .build()
+            );
+        }
+
     }
 
     // 같은 방의 유저들에게 ChatMsg 브로드캐스트
@@ -298,17 +306,25 @@ public class GameServerService {
 //            team = msg.getTeam();
             gameMode = msg.getGameMode();
             characterName = msg.getCharacter();
-
             //같은 이름의 방이 있으면 방을 생성하지 못하도록
-            for(ClientHandler user : users){
-                if(user.roomName.equals(msg.getRoomName())&&user!=this){
-                    System.out.println(roomName);
+            for(String room : rooms){
+                if(room.equals(msg.getRoomName())){
+                    System.out.println("이미 존재하는 방 이름");
                     send(new ChatMsg.Builder("CREATE_FAIL")
                             .roomName(roomName)
                             .build());
                     return;
                 }
             }
+//            for(ClientHandler user : users){
+//                if(user.roomName.equals(msg.getRoomName())&&user!=this){
+//                    System.out.println(roomName);
+//                    send(new ChatMsg.Builder("CREATE_FAIL")
+//                            .roomName(roomName)
+//                            .build());
+//                    return;
+//                }
+//            }
             //같은 이름의 방이 없으면 방 생성
             addClientToRoom(roomName, this); // 같은 이름의 게임방에 클라이언트 충가
             send(new ChatMsg.Builder("CREATE_SUCCESS")
