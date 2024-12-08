@@ -60,7 +60,7 @@ public class GamePanel extends JPanel {
     private Image backgroundImage; // 배경 이미지
     private Image blockImage; // 블록 이미지
 
-    private volatile boolean isFalling = false; // 플레이어가 낙하 중인지 여부
+    private boolean isFalling = false; // 플레이어가 낙하 중인지 여부
 
     // 블록 위치 정보
     // 블록 리스트 {x, y, width, height}
@@ -78,13 +78,13 @@ public class GamePanel extends JPanel {
     private List<Image> doorImages = new ArrayList<>(); // 문 이미지 리스트
     private int doorX = 660; // 문 위치 X
     private int doorY = getHeight() - 498; // 문 위치 Y
-    private volatile boolean isDoorOpen = false; // 문 열림 상태
-    private volatile boolean isDoorAnimationRunning = false; // 애니메이션 실행 중인지 여부
+    private static volatile boolean isDoorOpen = false; // 문 열림 상태
+    private static volatile boolean isDoorAnimationRun = false; // 문 열림 상태
+
 
     private int currentDoorIndex = 0; // 현재 문 이미지 인덱스
 
-    private volatile boolean isBlocked = false; // 플레이어가 움직임이 차단되었는지 여부
-    private Thread nextMapThread; // 다음 맵으로 이동 가능한 지 체크 스ㅔ드
+    private boolean isBlocked = false; // 플레이어가 움직임이 차단되었는지 여부
 
     public GamePanel(String nickName, String character, String roomName, Integer mode, Integer team, Integer level, ObjectOutputStream out) {
         this.nickName = nickName;
@@ -175,7 +175,7 @@ public class GamePanel extends JPanel {
         initializePlayerPosition(); // 플레이어 위치 초기화
 
         isDoorOpen = false; // 문 닫힘
-        isDoorAnimationRunning = false;
+        isDoorAnimationRun = false;
         currentDoorIndex = 0; // 현재 문 인덱스 0으로 초기화
         isBlocked = false; // 플레이어 움직임 차단
 
@@ -599,12 +599,6 @@ public class GamePanel extends JPanel {
         }
         return false;
     }
-    
-    // 플레이어 위치 정보 출력
-    private void printPlayerPositions() {
-        otherPlayers.forEach((name, position) ->
-                System.out.printf("플레이어 %s 위치: X=%d, Y=%d%n", name, position[0], position[1]));
-    }
 
     // 플레이어가 블록에 충돌했는지 체크
     private boolean isCollidesWithBlock(int x, int y) {
@@ -791,17 +785,22 @@ public class GamePanel extends JPanel {
                     remainingTime--; // 시간 감소
                     repaint(); // 패널 갱신
                 }
+
+                // 시간 종료 시
                 if (remainingTime == 0) {
                     isTimeRunning = false;
                     System.out.println(level + "맵 제한 시간 종료");
-                    if (!isDoorAnimationRunning) {
-                        isBlocked=true;
-                        currentDoorIndex = 0; // 문 초기화
+
+                    isBlocked = true;
+
+                    // 문이 열려있지 않고 문 열림 효과가 실행중이 아니라면
+                    if (!isDoorOpen && !isDoorAnimationRun ){
                         startDoorAnimation(() -> {
                             sendNextMap(level + 1); // 다음 맵 전환
                         });
                     }
                 }
+
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt(); // 스레드 중단
             }
@@ -812,9 +811,9 @@ public class GamePanel extends JPanel {
     // 문 열림 상태를 주기적으로 검사
     private void startDoorCheckTimer() {
         Timer doorCheckTimer = new Timer(200, e -> {
-            synchronized (this) {
-                // 조건을 명확히 하고 중복 실행 방지
-                if (!isDoorAnimationRunning && (!isDoorOpen && isPlayerAtDoor())) {
+            synchronized (GamePanel.class) {
+                // 문이 열려있지 않고, 캐릭터가 문 앞에 있고, 문열림이 실행중이 아니라면 문열림 실행
+                if (!isDoorOpen && isPlayerAtDoor() && !isDoorAnimationRun ) {
                     isBlocked = true;
                     startDoorAnimation(() -> sendNextMap(level + 1));
                 }
@@ -825,41 +824,35 @@ public class GamePanel extends JPanel {
 
     // 문 열림 애니메이션 (콜백함수를 매개변수로 받음)
     private synchronized void startDoorAnimation(Runnable onComplete) {
-        if (isDoorOpen || isDoorAnimationRunning) {
-            System.out.println("Animation already running or door is open.");
-            return;
-        }
-        isDoorAnimationRunning = true; // 동기화된 상태에서 플래그 설정
         System.out.println("Starting door animation...");
-        currentDoorIndex = 0;
+        isDoorAnimationRun = true;
 
         // Timer 시작
         Timer doorAnimationTimer = new Timer(700, null);
         doorAnimationTimer.addActionListener(new ActionListener() {
+            int doorIndex = 0;
+
             @Override
             public void actionPerformed(ActionEvent e) {
-                synchronized (this) {
-                    if (currentDoorIndex < doorImages.size() - 1) {
-                        currentDoorIndex++;
-                        sendCurrentDoorIndex(currentDoorIndex); // 서버에 현재 문 인덱스 전송
-                        System.out.println("Animating door, index: " + currentDoorIndex);
-                        repaint();
-                    } else {
-                        ((Timer) e.getSource()).stop(); // 타이머 종료
-                        isDoorOpen = true;
-                        isBlocked = false;
-                        isDoorAnimationRunning = false;
-                        System.out.println("Door animation completed.");
-                        if (onComplete != null) {
-                            onComplete.run();
-                        }
+                if (doorIndex < doorImages.size() - 1) {
+                    doorIndex++;
+                    sendCurrentDoorIndex(doorIndex); // 서버에 현재 문 인덱스 전송
+                    System.out.println("Animating door, index: " + doorIndex);
+                } else {
+                    ((Timer) e.getSource()).stop(); // 타이머 종료
+                    isDoorOpen = true;
+                    isDoorAnimationRun = false;
+                    isBlocked = false;
+                    System.out.println("Door animation completed.");
+                    if (onComplete != null) {
+                        onComplete.run();
                     }
                 }
+                repaint();
             }
         });
         doorAnimationTimer.start();
     }
-
 
     // 서버에게 다음 맵으로 전환한다는 메시지 전송
     public void sendNextMap(int level){
@@ -972,6 +965,8 @@ public class GamePanel extends JPanel {
     // 현재 인덱스 설정
     public void setCurrentDoorIndex(int currentDoorIndex) {
         this.currentDoorIndex = currentDoorIndex;
+        System.out.println("currentDoorIndex: " + currentDoorIndex);
+
         repaint();
     }
 

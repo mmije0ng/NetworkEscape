@@ -206,7 +206,7 @@ public class GameServerService {
         }
 
         // 클라이언트로부터 받은 메시지 관리
-        private void receiveMessages() {
+        private synchronized void receiveMessages() {
             try {
                 in = new ObjectInputStream(new BufferedInputStream(clientSocket.getInputStream()));
                 out = new ObjectOutputStream(new BufferedOutputStream(clientSocket.getOutputStream()));
@@ -636,7 +636,7 @@ public class GameServerService {
         }
 
         // 클라이언트로부터 받은 GameMsg 객체를 같은 방의 유저들에게 전송
-        // code: JUMP, MOVE
+        // code: JUMP, MOVE, NEXT_MAP, DOOR
         private void handleGameMsg(GameMsg msg) {
             broadcastToRoom(msg.getRoomName(), msg);
         }
