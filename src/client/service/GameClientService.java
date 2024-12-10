@@ -16,7 +16,6 @@ public class GameClientService {
 
     private String serverAddress;
     private int serverPort;
-    private String userName;
 
     public GameClientService(GameClient gameClient, String serverAddress, int serverPort) {
         this.gameClient = gameClient;
@@ -178,7 +177,7 @@ public class GameClientService {
             case "REMOVE_ITEM" -> gameClient.getGameWithChatPanel().getGamePanel().removeItem(gameMsg.getGotItem());
             case "NEXT_MAP" -> gameClient.startLoadingPanel(gameMsg, out);
             case "DOOR" -> gameClient.getGameWithChatPanel().getGamePanel().setCurrentDoorIndex(gameMsg.getCurrentDoorIndex());
-
+            case "RESULT" -> gameClient.startResultPanel(gameMsg, out);
             default -> gameClient.getGameWithChatPanel().getGamePanel().updateOtherPlayerPosition(
                     gameMsg.getNickname(),
                     gameMsg.getCharacter(),
@@ -262,7 +261,4 @@ public class GameClientService {
         gameClient.printDisplay(msg.getTextMessage());
     }
 
-    public ObjectOutputStream getOutStream () {
-        return out;
-    }
 }

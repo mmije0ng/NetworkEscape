@@ -71,9 +71,9 @@ public class GamePanel extends JPanel {
     private volatile boolean isTimeRunning = true; // 타이머 실행 여부
     private Thread timerThread; // 타이머 스레드
 
-    private Integer mode; // 게임 모드;
-    private Integer team; // 팀
-    private Integer level; // 게임 레벨
+    private int mode; // 게임 모드;
+    private int team; // 팀
+    private int level; // 게임 레벨
 
     private List<Image> doorImages = new ArrayList<>(); // 문 이미지 리스트
     private int doorX = 660; // 문 위치 X
@@ -86,7 +86,7 @@ public class GamePanel extends JPanel {
 
     private boolean isBlocked = false; // 플레이어가 움직임이 차단되었는지 여부
 
-    public GamePanel(String nickName, String character, String roomName, Integer mode, Integer team, Integer level, ObjectOutputStream out) {
+    public GamePanel(String nickName, String character, String roomName, int mode, int team, int level, ObjectOutputStream out) {
         this.nickName = nickName;
         this.character = character;
         this.roomName = roomName;
@@ -116,6 +116,7 @@ public class GamePanel extends JPanel {
             }
         });
         focusTimer.start();
+
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -824,8 +825,7 @@ public class GamePanel extends JPanel {
 
     // 문 열림 애니메이션 (콜백함수를 매개변수로 받음)
     private synchronized void startDoorAnimation(Runnable onComplete) {
-        System.out.println("Starting door animation...");
-        isDoorAnimationRun = true;
+        isDoorAnimationRun = true; // 문 열림 효과 flag를 true로 변경
 
         // Timer 시작
         Timer doorAnimationTimer = new Timer(700, null);
@@ -837,13 +837,11 @@ public class GamePanel extends JPanel {
                 if (doorIndex < doorImages.size() - 1) {
                     doorIndex++;
                     sendCurrentDoorIndex(doorIndex); // 서버에 현재 문 인덱스 전송
-                    System.out.println("Animating door, index: " + doorIndex);
                 } else {
                     ((Timer) e.getSource()).stop(); // 타이머 종료
                     isDoorOpen = true;
                     isDoorAnimationRun = false;
                     isBlocked = false;
-                    System.out.println("Door animation completed.");
                     if (onComplete != null) {
                         onComplete.run();
                     }
@@ -865,6 +863,7 @@ public class GamePanel extends JPanel {
                         .nickname(nickName)
                         .character(character)
                         .level(level)
+                        .point(score)
                         .build();
 
                 out.writeObject(gameMsg);
@@ -876,7 +875,7 @@ public class GamePanel extends JPanel {
     }
 
     // 서버에게 현재 열리고 있는 문 인덱스 전송
-    private synchronized void sendCurrentDoorIndex(Integer currentDoorIndex) {
+    private synchronized void sendCurrentDoorIndex(int currentDoorIndex) {
         if (out != null) {
             try {
                 GameMsg gameMsg = new GameMsg.Builder("DOOR")
@@ -962,11 +961,9 @@ public class GamePanel extends JPanel {
         g.drawString(scoreText, x, y+20);
     }
 
-    // 현재 인덱스 설정
+    // 현재 문 인덱스 설정
     public void setCurrentDoorIndex(int currentDoorIndex) {
         this.currentDoorIndex = currentDoorIndex;
-        System.out.println("currentDoorIndex: " + currentDoorIndex);
-
         repaint();
     }
 

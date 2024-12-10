@@ -24,9 +24,8 @@ public class RoomPanel extends JPanel {
         t_roomName = new JTextField(msg.getRoomName());
         t_characterName = new JTextField(msg.getCharacter());
 
-        // mode와 team 설정: msg가 null인 경우 기본값 1
-        int gameMode = (msg != null && msg.getGameMode() != null) ? msg.getGameMode() : 1;
-        int team = (msg != null && msg.getTeam() != null) ? msg.getTeam() : 1;
+        int gameMode = msg.getGameMode();
+        int team = msg.getTeam();
 
         // mode와 team 텍스트 필드 초기화
         t_mode = new JTextField(gameMode+"vs"+gameMode);
