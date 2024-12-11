@@ -249,6 +249,12 @@ public class GameServerService {
                 // 유저 삭제
                 removeClientFromRoom(roomName, this);
                 users.remove(this);
+                // 유저가 속해 있던 방에 아무도 없으면 삭제
+                Vector<ClientHandler> roomUsers = roomMap.get(roomName);
+                if(roomUsers == null){
+                    rooms.remove(roomName);
+                }
+                broadcastAllUpdatedRoom(rooms);
                 closeResources();
             }
         }
@@ -280,6 +286,9 @@ public class GameServerService {
             }
             printDisplay("현재 참가자 수: " + users.size());
             System.out.println("닉네임: "+nickName);
+
+            //방 정보 방송
+            broadcastAllUpdatedRoom(rooms);
         }
 
         private void handleLOGOUT(ChatMsg msg){
