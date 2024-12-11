@@ -158,7 +158,8 @@ public class GameClientService {
                     "방 생성 실패",               // 창 제목
                     JOptionPane.WARNING_MESSAGE // 경고 아이콘 사용
             );
-            case "ENTER_SUCCESS" -> startRoom(msg);
+            case "ENTER_SUCCESS" ->  gameClient.startRoomPanel(this, msg);
+            case "ENTER_OTHER_SUCCESS" -> gameClient.printDisplay(msg.getTextMessage());
 //            case "ENTER_FAIL" -> 입장 실패시 알람
             case "EXIT_SUCCESS" -> startMain(msg);
             case "START_GAME" -> startGame(msg); // 게임 시작
