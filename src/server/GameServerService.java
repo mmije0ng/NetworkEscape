@@ -363,6 +363,12 @@ public class GameServerService {
                     if((roomUsers.size()+1)%2!=0) team=1; //홀수번째 입장:1팀, 짝수번째 입장:2팀
                     else team=2;
 
+                    // 캐릭터 선택 중복 검사
+                    if (isCharacterAlready(msg.getCharacter())){
+
+                    }
+
+
                     addClientToRoom(roomName, this); // 같은 이름의 게임방에 클라이언트 추가
 
                     printDisplay("새로운 참가자 enter");
@@ -734,6 +740,15 @@ public class GameServerService {
 
             // 결과 반환
             return playerInfo.toString();
+        }
+
+        // 게임 캐릭터 중복 검사
+        private Boolean isCharacterAlready(String characterName){
+            // 방 정보 가져오기
+            Vector<ClientHandler> roomUsers = roomMap.get(roomName);
+
+            return roomUsers.stream()
+                    .anyMatch(client -> client.characterName.equals(characterName));
         }
 
         // 서버 -> 클라이언트로 ChatMsg 전송
