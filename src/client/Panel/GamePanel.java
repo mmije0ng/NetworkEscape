@@ -60,7 +60,7 @@ public class GamePanel extends JPanel {
     private Image backgroundImage; // 배경 이미지
     private Image blockImage; // 블록 이미지
 
-    private volatile boolean isFalling = false; // 플레이어가 낙하 중인지 여부
+    private boolean isFalling = false; // 플레이어가 낙하 중인지 여부
 
     // 블록 위치 정보
     // 블록 리스트 {x, y, width, height}
@@ -71,21 +71,22 @@ public class GamePanel extends JPanel {
     private volatile boolean isTimeRunning = true; // 타이머 실행 여부
     private Thread timerThread; // 타이머 스레드
 
-    private Integer mode; // 게임 모드;
-    private Integer team; // 팀
-    private Integer level; // 게임 레벨
+    private int mode; // 게임 모드;
+    private int team; // 팀
+    private int level; // 게임 레벨
 
     private List<Image> doorImages = new ArrayList<>(); // 문 이미지 리스트
     private int doorX = 660; // 문 위치 X
     private int doorY = getHeight() - 498; // 문 위치 Y
-    private volatile boolean isDoorOpen = false; // 문 열림 상태
-    private volatile boolean isDoorAnimationRunning = false; // 애니메이션 실행 중인지 여부
+    private static volatile boolean isDoorOpen = false; // 문 열림 상태
+    private static volatile boolean isDoorAnimationRun = false; // 문 열림 상태
+
 
     private int currentDoorIndex = 0; // 현재 문 이미지 인덱스
 
-    private volatile boolean isBlocked = false; // 플레이어가 움직임이 차단되었는지 여부
+    private boolean isBlocked = false; // 플레이어가 움직임이 차단되었는지 여부
 
-    public GamePanel(String nickName, String character, String roomName, Integer mode, Integer team, Integer level, ObjectOutputStream out) {
+    public GamePanel(String nickName, String character, String roomName, int mode, int team, int level, ObjectOutputStream out) {
         this.nickName = nickName;
         this.character = character;
         this.roomName = roomName;
@@ -115,6 +116,7 @@ public class GamePanel extends JPanel {
             }
         });
         focusTimer.start();
+
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -161,7 +163,7 @@ public class GamePanel extends JPanel {
         startMessageSenderThread(); // 메시지 전송 스레드 시작
         startTimerThread(); // 제한 시간 타이머 스레드 시작
         startDoorCheckTimer(); // 문이 열려있는지 닫혀있는지 체크
-        startNextMapThread(); // 다음 맵으로 전환 가능한지 체크하는 스레드 시작
+//        startNextMapThread(); // 다음 맵으로 전환 가능한지 체크하는 스레드 시작
 
         System.out.println("현재 맵 레벨: "+ level);
     }
@@ -170,21 +172,25 @@ public class GamePanel extends JPanel {
     public void initializeNextMap(int level) {
         this.level = level; // 레벨 재설정
 
-        loadImages(); // 새로운 맵 이미지 로드
+        loadImages();
         initializePlayerPosition(); // 플레이어 위치 초기화
 
         isDoorOpen = false; // 문 닫힘
-        isDoorAnimationRunning = false;
+        isDoorAnimationRun = false;
         currentDoorIndex = 0; // 현재 문 인덱스 0으로 초기화
         isBlocked = false; // 플레이어 움직임 차단
 
         initializeBlocks(); // 블록 초기화
 
-        // 제한 시간이 종료되어 타이머 스레드가 종료되었다면 다시 시작
-        remainingTime = 60-level*10; // 제한 시간 초기화
+        remainingTime = 60 - level * 10;
         isTimeRunning = true;
-
+        // 새로운 타이머 스레드 시작
         startTimerThread();
+
+        System.out.println("door size: "+doorImages.size());
+
+
+        System.out.println("currentDoorIndex: "+currentDoorIndex);
 
         System.out.println(this.level+"레벨 맵 시작");
     }
@@ -208,14 +214,15 @@ public class GamePanel extends JPanel {
 
 
         // 두 번째 레벨
-        level1Blocks.add(new int[]{640, getHeight() - 120, 40, 40});
-        level1Blocks.add(new int[]{600, getHeight() - 120, 40, 40});
-        level1Blocks.add(new int[]{560, getHeight() - 120, 40, 40});
-        level1Blocks.add(new int[]{520, getHeight() - 120, 40, 40});
-        level1Blocks.add(new int[]{480, getHeight() - 120, 40, 40});
-        level1Blocks.add(new int[]{440, getHeight() - 120, 40, 40});
-        level1Blocks.add(new int[]{400, getHeight() - 120, 40, 40});
-        level1Blocks.add(new int[]{360, getHeight() - 120, 40, 40});
+        level1Blocks.add(new int[]{660, getHeight() - 120, 40, 40});
+        level1Blocks.add(new int[]{620, getHeight() - 120, 40, 40});
+        level1Blocks.add(new int[]{580, getHeight() - 120, 40, 40});
+        level1Blocks.add(new int[]{540, getHeight() - 120, 40, 40});
+        level1Blocks.add(new int[]{500, getHeight() - 120, 40, 40});
+        level1Blocks.add(new int[]{460, getHeight() - 120, 40, 40});
+        level1Blocks.add(new int[]{420, getHeight() - 120, 40, 40});
+        level1Blocks.add(new int[]{380, getHeight() - 120, 40, 40});
+
         level1Blocks.add(new int[]{280, getHeight() - 120, 40, 40});
         level1Blocks.add(new int[]{240, getHeight() - 120, 40, 40});
         level1Blocks.add(new int[]{0, getHeight() - 120, 40, 40});
@@ -409,6 +416,7 @@ public class GamePanel extends JPanel {
     private void loadImages() {
         try {
             // 문 이미지 로드
+            doorImages.clear();
             doorImages.add(createImageIcon("/image/door/door1.png").getImage());
             doorImages.add(createImageIcon("/image/door/door2.png").getImage());
             doorImages.add(createImageIcon("/image/door/door3.png").getImage());
@@ -592,12 +600,6 @@ public class GamePanel extends JPanel {
         }
         return false;
     }
-    
-    // 플레이어 위치 정보 출력
-    private void printPlayerPositions() {
-        otherPlayers.forEach((name, position) ->
-                System.out.printf("플레이어 %s 위치: X=%d, Y=%d%n", name, position[0], position[1]));
-    }
 
     // 플레이어가 블록에 충돌했는지 체크
     private boolean isCollidesWithBlock(int x, int y) {
@@ -751,32 +753,6 @@ public class GamePanel extends JPanel {
         repaint();
     }
 
-    // 제한 시간 타이머 스레드
-    private void startTimerThread() {
-        // 기존 타이머 스레드가 실행 중이면 중지
-        if (timerThread != null && timerThread.isAlive()) {
-            timerThread.interrupt();
-        }
-
-        // 새로운 타이머 스레드 시작
-        timerThread = new Thread(() -> {
-            try {
-                while (isTimeRunning && remainingTime > 0) {
-                    Thread.sleep(1000); // 1초 대기
-                    remainingTime--; // 시간 감소
-                    repaint(); // 패널 갱신
-                }
-                if (remainingTime == 0) {
-                    isTimeRunning = false;
-                    System.out.println(level+"맵 제한 시간 종료");
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt(); // 스레드 중단
-            }
-        });
-        timerThread.start();
-    }
-
     // 플레이어가 문에 도달했는지 체크
     private boolean isPlayerAtDoor() {
         int playerWidth = 40; // 플레이어의 폭
@@ -795,48 +771,84 @@ public class GamePanel extends JPanel {
         return isXAligned && isYAligned;
     }
 
+    // 제한 시간 타이머 스레드
+    private void startTimerThread() {
+        // 기존 타이머 스레드가 실행 중이면 중지
+        if (timerThread != null && timerThread.isAlive()) {
+            timerThread.interrupt();
+        }
+
+        // 새로운 타이머 스레드 시작
+        timerThread = new Thread(() -> {
+            try {
+                while (isTimeRunning && remainingTime > 0 && !isDoorAnimationRun) {
+                    Thread.sleep(1000); // 1초 대기
+                    remainingTime--; // 시간 감소
+                    repaint(); // 패널 갱신
+                }
+
+                // 시간 종료 시
+                if (remainingTime == 0) {
+                    isTimeRunning = false;
+                    System.out.println(level + "맵 제한 시간 종료");
+
+                    isBlocked = true;
+
+                    // 문이 열려있지 않고 문 열림 효과가 실행중이 아니라면
+                    if (!isDoorOpen && !isDoorAnimationRun ){
+                        startDoorAnimation(() -> {
+                            sendNextMap(level + 1); // 다음 맵 전환
+                        });
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // 스레드 중단
+            }
+        });
+        timerThread.start();
+    }
+
     // 문 열림 상태를 주기적으로 검사
     private void startDoorCheckTimer() {
         Timer doorCheckTimer = new Timer(200, e -> {
-            if (!isDoorOpen && !isDoorAnimationRunning && isPlayerAtDoor()) {
-                isBlocked = true; // 플레이어 움직임 차단
-                startDoorAnimation(null); // 문 열림 애니메이션 시작
-            }
-        });
-        doorCheckTimer.setRepeats(true); // 계속 반복
-        doorCheckTimer.start(); // 타이머 시작
-    }
-
-    // 문 열림 애니메이션 (콜백 지원)
-    private void startDoorAnimation(Runnable onComplete) {
-        synchronized (this) {
-            // 문이 이미 열려 있거나 애니메이션이 실행 중이면 호출하지 않음
-            if (isDoorOpen || isDoorAnimationRunning) {
-                return;
-            }
-            isDoorAnimationRunning = true; // 애니메이션 실행 중으로 설정
-        }
-
-        Timer doorAnimationTimer = new Timer(500, new ActionListener() { // 딜레이 설정 (500ms)
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (currentDoorIndex < doorImages.size() - 1) {
-                    currentDoorIndex++; // 다음 문 이미지로 전환
-                    repaint(); // 문 상태를 갱신
-                    sendCurrentDoorIndex(currentDoorIndex);
-                } else {
-                    ((Timer) e.getSource()).stop(); // 타이머 종료
-                    isDoorOpen = true; // 문이 완전히 열림
-                    isBlocked = false; // 플레이어 움직임 허용
-                    isDoorAnimationRunning = false; // 애니메이션 종료 상태로 설정
-                    if (onComplete != null) {
-                        onComplete.run(); // 애니메이션 완료 후 콜백 실행
-                    }
+            synchronized (GamePanel.class) {
+                // 문이 열려있지 않고, 캐릭터가 문 앞에 있고, 문열림이 실행중이 아니라면 문열림 실행
+                if (!isDoorOpen && isPlayerAtDoor() && !isDoorAnimationRun ) {
+                    isBlocked = true;
+                    startDoorAnimation(() -> sendNextMap(level + 1));
                 }
             }
         });
-        doorAnimationTimer.setRepeats(true); // 계속 반복
-        doorAnimationTimer.start(); // 타이머 시작
+        doorCheckTimer.start();
+    }
+
+    // 문 열림 애니메이션 (콜백함수를 매개변수로 받음)
+    private synchronized void startDoorAnimation(Runnable onComplete) {
+        isDoorAnimationRun = true; // 문 열림 효과 flag를 true로 변경
+
+        // Timer 시작
+        Timer doorAnimationTimer = new Timer(700, null);
+        doorAnimationTimer.addActionListener(new ActionListener() {
+            int doorIndex = 0;
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (doorIndex < doorImages.size() - 1) {
+                    doorIndex++;
+                    sendCurrentDoorIndex(doorIndex); // 서버에 현재 문 인덱스 전송
+                } else {
+                    ((Timer) e.getSource()).stop(); // 타이머 종료
+                    isDoorOpen = true;
+                    isDoorAnimationRun = false;
+                    isBlocked = false;
+                    if (onComplete != null) {
+                        onComplete.run();
+                    }
+                }
+                repaint();
+            }
+        });
+        doorAnimationTimer.start();
     }
 
     // 서버에게 다음 맵으로 전환한다는 메시지 전송
@@ -850,6 +862,7 @@ public class GamePanel extends JPanel {
                         .nickname(nickName)
                         .character(character)
                         .level(level)
+                        .point(score)
                         .build();
 
                 out.writeObject(gameMsg);
@@ -860,7 +873,8 @@ public class GamePanel extends JPanel {
         }
     }
 
-    private synchronized void sendCurrentDoorIndex(Integer currentDoorIndex) {
+    // 서버에게 현재 열리고 있는 문 인덱스 전송
+    private synchronized void sendCurrentDoorIndex(int currentDoorIndex) {
         if (out != null) {
             try {
                 GameMsg gameMsg = new GameMsg.Builder("DOOR")
@@ -877,59 +891,6 @@ public class GamePanel extends JPanel {
             } catch (IOException e) {
                 System.out.println("sendCurrentDoorIndex 오류> " + e.getMessage());
             }
-        }
-    }
-
-    // 현재 맵의 게임이 끝나고 다음 맵으로 전환할 수 있는지 검사
-    private void startNextMapThread() {
-        Thread nextMapThread = new Thread(() -> {
-            while (true) {
-                try {
-                    // 타이머 종료 또는 문 열림 여부 확인
-                    if (isNextMapConditionMet()) {
-                        prepareNextMap(); // 다음 맵 준비 및 전환
-                        break; // 루프 종료
-                    }
-                    Thread.sleep(100); // 100ms마다 확인
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt(); // 스레드 중단 처리
-                    break; // 스레드가 중단되면 루프 종료
-                }
-            }
-        });
-
-        nextMapThread.setDaemon(true); // 데몬 스레드로 설정 (프로그램 종료 시 자동 종료)
-        nextMapThread.start(); // 스레드 시작
-    }
-
-    // 다음 맵 조건 확인 (타이머 종료 또는 문 열림)
-    private boolean isNextMapConditionMet() {
-        return isTimerFinished() || isDoorOpen;
-    }
-
-    // 타이머 종료 여부 확인
-    private boolean isTimerFinished() {
-        return timerThread == null || !timerThread.isAlive();
-    }
-
-    // 다음 맵 준비 및 전환
-    private void prepareNextMap() {
-        if (isTimerFinished()) {
-            handleTimerEnd(() -> sendNextMap(level + 1)); // 타이머 종료 처리 후 다음 맵 이동
-        } else {
-            sendNextMap(level + 1); // 타이머가 종료되지 않은 경우 바로 다음 레벨로 이동
-        }
-    }
-
-    // 타이머 종료 시 처리 (콜백 추가)
-    private void handleTimerEnd(Runnable onDoorAnimationComplete) {
-        isBlocked = true; // 플레이어 움직임 차단
-        if (!isDoorOpen) {
-            startDoorAnimation(onDoorAnimationComplete); // 문 열림 애니메이션 시작 후 콜백 실행
-            System.out.println("문 열림 애니메이션 시작 후 콜백 실행");
-        } else {
-            onDoorAnimationComplete.run(); // 문이 이미 열려 있으면 바로 콜백 실행
-            System.out.println("문이 이미 열려 있으면 바로 콜백 실행");
         }
     }
 
@@ -999,6 +960,7 @@ public class GamePanel extends JPanel {
         g.drawString(scoreText, x, y+20);
     }
 
+    // 현재 문 인덱스 설정
     public void setCurrentDoorIndex(int currentDoorIndex) {
         this.currentDoorIndex = currentDoorIndex;
         repaint();
@@ -1006,6 +968,8 @@ public class GamePanel extends JPanel {
 
     // 아이템 스폰
     public void initializeItem(List<int[]> newItems) {
+        //모든 아이템 제거 후 추가
+        items.clear();
         items.addAll(newItems);
     }
 

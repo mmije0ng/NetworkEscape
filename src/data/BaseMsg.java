@@ -6,12 +6,12 @@ import java.io.Serializable;
 public abstract class BaseMsg implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final String code;       // 메시지 유형
+    private String code;       // 메시지 유형
     private final String roomName;       // 게임방 이름
     private final String password;
-    private final Integer gameMode;  // 게임 모드 (1대1, 2대2)
+    private final int gameMode;  // 게임 모드 (1대1, 2대2)
     private final String nickname;   // 닉네임
-    private final Integer team;      // 팀1, 팀2
+    private final int team;      // 팀1, 팀2
     private final String message;    // 메시지
     private final String character;  // 캐릭터 이름
 
@@ -39,7 +39,7 @@ public abstract class BaseMsg implements Serializable {
         return password;
     }
 
-    public Integer getGameMode() {
+    public int getGameMode() {
         return gameMode;
     }
 
@@ -47,7 +47,7 @@ public abstract class BaseMsg implements Serializable {
         return nickname;
     }
 
-    public Integer getTeam() {
+    public int getTeam() {
         return team;
     }
 
@@ -59,14 +59,19 @@ public abstract class BaseMsg implements Serializable {
         return character;
     }
 
+    // setter
+    public void setCode(String code) {
+        this.code = code;
+    }
+
     // 빌더 클래스 (제네릭)
     public abstract static class Builder<T extends Builder<T>> {
         private final String code;
         private String roomName;
         private String password;
-        private Integer gameMode;
+        private int gameMode;
         private String nickname;
-        private Integer team;
+        private int team;
         private String message;
         private String character;
 
@@ -79,7 +84,7 @@ public abstract class BaseMsg implements Serializable {
             return self();
         }
 
-        public T gameMode(Integer gameMode) {
+        public T gameMode(int gameMode) {
             this.gameMode = gameMode;
             return self();
         }
@@ -93,7 +98,7 @@ public abstract class BaseMsg implements Serializable {
             return self();
         }
 
-        public T team(Integer team) {
+        public T team(int team) {
             this.team = team;
             return self();
         }

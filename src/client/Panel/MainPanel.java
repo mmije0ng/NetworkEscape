@@ -21,7 +21,7 @@ public class MainPanel extends JPanel{
 //    private DefaultStyledDocument document;
     private GameClientService service;
 
-    private int playmode;
+    private int playmode=0;
     private String userName;
 
     private String selectedCharacter; // 선택된 캐릭터 이름
@@ -284,7 +284,7 @@ public class MainPanel extends JPanel{
                                     room,     // 선택된 방 이름
                                     roomPassword, // 입력한 비밀번호
                                     selectedCharacter, // 선택된 캐릭터
-                                    playmode // 선택된 플레이 모드
+                                    msg.getGameMode() // 선택된 플레이 모드
                             );
                         } else {
                             JOptionPane.showMessageDialog(
@@ -297,7 +297,7 @@ public class MainPanel extends JPanel{
                     }
 
                 });
-                System.out.println("로비리스트 업데이트: " + room);
+                System.out.println("로비리스트 업데이트: " + room +", 게임모드: "+msg );
                 roomPanel.add(t_roomName, BorderLayout.CENTER);
                 roomPanel.add(b_enter, BorderLayout.EAST);
                 lobbyListPanel.add(roomPanel);

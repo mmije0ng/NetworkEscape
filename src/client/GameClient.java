@@ -22,13 +22,12 @@ public class GameClient extends JFrame {
     private LoadingPanel loadingPanel;
     private JTextPane t_display;
     private DefaultStyledDocument document;
-
     private GameWithChatPanel gameWithChatPanel;
 
     private Stack<GameWithChatPanel> gamePanelStack = new Stack<>(); // GameWithChatPanel 스택
 
     public GameClient(String serverAddress, int serverPort) {
-        super("Network Escape");
+        super("미로 대탈출");
 
         gameClientService = new GameClientService(this, serverAddress, serverPort);
 //        gameStartPanel = new GameStartPanel(gameClientService);
@@ -96,7 +95,7 @@ public class GameClient extends JFrame {
         revalidate();
         repaint();
 
-        System.out.println("startRoomPanel msg code: "+msg.getCode()+", characterName: "+msg.getCharacter());
+        System.out.println("startRoomPanel msg code: "+msg.getCode()+", characterName: "+msg.getCharacter()+", team: "+msg.getTeam());
     }
 
    // NEXT_MAP 메시지를 받아 로딩 화면 표시
@@ -118,6 +117,7 @@ public class GameClient extends JFrame {
            if (!gamePanelStack.isEmpty()) {
                gameWithChatPanel = gamePanelStack.pop(); // 스택에서 꺼내기
                getContentPane().removeAll();
+
                add(gameWithChatPanel);
 
                gameWithChatPanel.getGamePanel().initializeNextMap(msg.getLevel());
@@ -144,7 +144,7 @@ public class GameClient extends JFrame {
                 msg.getGameMode(),
                 msg.getTeam(),
                 1, // 처음 시작 레벨은 1
-                gameClientService.getOutStream()
+                out
         );
 
         // 새로운 ChatPanel 생성
@@ -179,6 +179,49 @@ public class GameClient extends JFrame {
     public GameWithChatPanel getGameWithChatPanel() {
         return gameWithChatPanel;
     }
+
+    // 게임 결과 패널
+    public void startResultPanel(GameMsg msg, ObjectOutputStream out) {
+        // 기존 GameWithChatPanel 스택에 저장
+        if (gameWithChatPanel != null) {
+            gamePanelStack.push(gameWithChatPanel);
+        }
+
+        // 로딩 패널 표시
+        getContentPane().removeAll();
+        loadingPanel = new LoadingPanel();
+        add(loadingPanel);
+        revalidate();
+        repaint();
+
+        // 일정 시간 후 로딩 패널 종료 및 ResultPanel 표시
+        Timer timer = new Timer(3000, e -> {
+            getContentPane().removeAll();
+
+            setSize(1100, 600);
+
+            // ResultPanel 생성 및 추가
+            ResultPanel resultPanel = new ResultPanel(
+                    msg.getRoomName(),
+                    msg.getNickname(),
+                    msg.getGameMode(),
+                    msg.getTeam(),
+                    msg.getPoint(),
+                    msg.getWinTeam(),
+                    msg.getWinPoint(),
+                    msg.getWinners(),
+                    out
+            );
+
+            add(resultPanel);
+            resultPanel.requestFocusInWindow();
+            revalidate();
+            repaint();
+        });
+        timer.setRepeats(false); // 한 번만 실행
+        timer.start();
+    }
+
 
     public static void main(String[] args) {
         String serverAddress = "localhost";
