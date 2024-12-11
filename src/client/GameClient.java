@@ -179,6 +179,7 @@ public class GameClient extends JFrame {
     public GameWithChatPanel getGameWithChatPanel() {
         return gameWithChatPanel;
     }
+    public MainPanel getMainPanel() {return mainPanel;}
 
     // 게임 결과 패널
     public void startResultPanel(GameMsg msg, ObjectOutputStream out) {
