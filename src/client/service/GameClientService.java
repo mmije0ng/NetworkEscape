@@ -38,7 +38,7 @@ public class GameClientService {
         }
 
         // 서버로 LOGIN 코드 전송
-        sendCreate(nickName, roomName, password, characterName, mode);
+        sendCreate(nickName, roomName, password, characterName, mode, 1);
     }
 
     public void enterRoom(String nickName, String roomName, String password, String characterName, int mode) {
@@ -147,7 +147,8 @@ public class GameClientService {
             case "LOGOUT_SUCCESS" -> gameClient.startLoginPanel(serverAddress, serverPort);
             case "CREATE_SUCCESS" -> startRoom(msg);
             case "CREATE_FAIL" -> System.out.println("방 생성 실패");
-            case "ENTER_SUCCESS" -> startRoom(msg);
+            case "ENTER_SUCCESS" ->  gameClient.startRoomPanel(this, msg);
+            case "ENTER_OTHER_SUCCESS" -> gameClient.printDisplay(msg.getTextMessage());
 //            case "ENTER_FAIL" -> 입장 실패시 알람
             case "EXIT_SUCCESS" -> startMain(msg);
             case "START_GAME" -> startGame(msg); // 게임 시작
@@ -198,13 +199,14 @@ public class GameClientService {
     }
 
     // 서버로 CREATE 코드 전송
-    private void sendCreate (String nickName, String roomName, String password, String characterName,int mode){
+    private void sendCreate (String nickName, String roomName, String password, String characterName, int mode, int team){
         ChatMsg chatMsg = new ChatMsg.Builder("CREATE")
                 .nickname(nickName)
                 .roomName(roomName)
                 .password(password)
                 .character(characterName)
                 .gameMode(mode)
+                .team(team)
                 .build();
         send(chatMsg);
     }

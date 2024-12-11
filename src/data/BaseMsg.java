@@ -6,7 +6,7 @@ import java.io.Serializable;
 public abstract class BaseMsg implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final String code;       // 메시지 유형
+    private String code;       // 메시지 유형
     private final String roomName;       // 게임방 이름
     private final String password;
     private final int gameMode;  // 게임 모드 (1대1, 2대2)
@@ -57,6 +57,11 @@ public abstract class BaseMsg implements Serializable {
 
     public String getCharacter() {
         return character;
+    }
+
+    // setter
+    public void setCode(String code) {
+        this.code = code;
     }
 
     // 빌더 클래스 (제네릭)

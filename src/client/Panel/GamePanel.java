@@ -781,7 +781,7 @@ public class GamePanel extends JPanel {
         // 새로운 타이머 스레드 시작
         timerThread = new Thread(() -> {
             try {
-                while (isTimeRunning && remainingTime > 0) {
+                while (isTimeRunning && remainingTime > 0 && !isDoorAnimationRun) {
                     Thread.sleep(1000); // 1초 대기
                     remainingTime--; // 시간 감소
                     repaint(); // 패널 갱신
@@ -801,7 +801,6 @@ public class GamePanel extends JPanel {
                         });
                     }
                 }
-
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt(); // 스레드 중단
             }
@@ -969,6 +968,8 @@ public class GamePanel extends JPanel {
 
     // 아이템 스폰
     public void initializeItem(List<int[]> newItems) {
+        //모든 아이템 제거 후 추가
+        items.clear();
         items.addAll(newItems);
     }
 

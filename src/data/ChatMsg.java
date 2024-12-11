@@ -9,7 +9,7 @@ public class ChatMsg extends BaseMsg {
     private final byte[] imageBytes; // 이미지 데이터를 바이트 배열로 저장
     private final String fileName;   // 파일 이름
     private final long fileSize;     // 파일 크기
-    private final String textMessage; // 텍스트 메시지
+    private String textMessage; // 텍스트 메시지
     private final List<String> roomList;
 
     private ChatMsg(Builder builder) {
@@ -50,6 +50,8 @@ public class ChatMsg extends BaseMsg {
     public void setImage(ImageIcon image) {
         this.image = image;
     }
+
+    public void setTextMessage(String textMessage) {this.textMessage = textMessage;}
 
 
     // Builder 클래스
@@ -103,6 +105,7 @@ public class ChatMsg extends BaseMsg {
         public ChatMsg build() {
             return new ChatMsg(this);
         }
+
     }
 
 

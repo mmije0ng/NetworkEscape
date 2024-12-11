@@ -129,7 +129,7 @@ public class ResultPanel extends JPanel {
                 }
 
                 // 이미지와 닉네임 사이 간격 추가
-                individualPanel.add(Box.createRigidArea(new Dimension(0, 10))); // 10px 수직 간격
+                individualPanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
                 // 닉네임 라벨
                 JLabel nameLabel = new JLabel("승리 플레이어: " + nickname);

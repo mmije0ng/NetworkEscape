@@ -50,10 +50,6 @@ public class GameServerService {
                         ClientHandler clientHandler = new ClientHandler(clientSocket);
                         clientHandler.start();
 
-//                        synchronized (users) {
-//                            users.add(clientHandler);
-//                        }
-//                        printDisplay("현재 참가자 수: " + users.size());
                     } catch (IOException e) {
                         if (!serverSocket.isClosed()) { // 서버 소켓이 닫히지 않았을 경우만 오류 출력
                             printDisplay("클라이언트 연결 중 오류 발생: " + e.getMessage());
@@ -76,12 +72,6 @@ public class GameServerService {
         System.out.println("client team: "+client.team);
 
         printDisplay("[" + roomName + "] 참가자 수: " + roomMap.get(roomName).size());
-
-        // 새로운 참가자 입장 시 같은 방의 모든 참가자들에게 broadcast
-
-
-
-//        broadcastToRoom(roomName, );
     }
 
     // 퇴장 시 게임방에서 클라이언트 삭제
@@ -307,9 +297,19 @@ public class GameServerService {
             nickName = msg.getNickname();
             roomName = msg.getRoomName();
             password = msg.getPassword();
-//            team = msg.getTeam();
             gameMode = msg.getGameMode();
             characterName = msg.getCharacter();
+            team = msg.getTeam();
+
+            //roomName, password, gameMode 입력하지 않으면 방 생성 실패
+            if(roomName.equals("")||password.equals("")||gameMode==0){
+                System.out.println("방 정보를 입력하세요.");
+                send(new ChatMsg.Builder("CREATE_FAIL")
+                        .roomName(roomName)
+                        .build());
+                return;
+            }
+
             //같은 이름의 방이 있으면 방을 생성하지 못하도록
             for(String room : rooms){
                 if(room.equals(msg.getRoomName())){
@@ -320,15 +320,7 @@ public class GameServerService {
                     return;
                 }
             }
-//            for(ClientHandler user : users){
-//                if(user.roomName.equals(msg.getRoomName())&&user!=this){
-//                    System.out.println(roomName);
-//                    send(new ChatMsg.Builder("CREATE_FAIL")
-//                            .roomName(roomName)
-//                            .build());
-//                    return;
-//                }
-//            }
+
             //같은 이름의 방이 없으면 방 생성
             addClientToRoom(roomName, this); // 같은 이름의 게임방에 클라이언트 충가
             send(new ChatMsg.Builder("CREATE_SUCCESS")
@@ -337,6 +329,7 @@ public class GameServerService {
                     .character(characterName)
                     .roomName(roomName)
                     .password(password)
+                    .team(team)
                     .textMessage("["+msg.getRoomName()+"] 의 새로운 참가자 입장, 닉네임: "+msg.getNickname()+", 캐릭터: "+msg.getCharacter())
                     .build()
             );
@@ -385,7 +378,10 @@ public class GameServerService {
                             .textMessage("["+msg.getRoomName()+"] 의 새로운 참가자 입장, 닉네임: "+msg.getNickname()+" 캐릭터: "+msg.getCharacter())
                             .build();
 
-//                    send(chatMsg);
+                    send(chatMsg);
+
+                    chatMsg.setCode("ENTER_OTHER_SUCCESS");
+                    chatMsg.setTextMessage(printAllRoomPlayers(roomName));
                     broadcastToRoom(roomName, chatMsg);
 
                     return;
@@ -713,6 +709,31 @@ public class GameServerService {
             return teamScores.entrySet().stream()
                     .max(Map.Entry.comparingByValue()) // 값(점수)을 기준으로 최대값 찾기
                     .orElse(null); // 비어있는 경우 null 반환
+        }
+
+        // 같은 방 플레이어들의 목록 출력
+        private String printAllRoomPlayers(String roomName) {
+            // 방 정보 가져오기
+            Vector<ClientHandler> roomUsers = roomMap.get(roomName);
+
+            // 방이 존재하지 않거나 유저가 없는 경우 처리
+            if (roomUsers == null || roomUsers.isEmpty()) {
+                return "[" + roomName + "] 방에 플레이어가 없습니다.";
+            }
+
+            // StringBuilder로 플레이어 정보 생성
+            StringBuilder playerInfo = new StringBuilder("[" + roomName + "] 의 플레이어 목록\n");
+            for (ClientHandler client : roomUsers) {
+                playerInfo.append("닉네임: ").append(client.nickName)
+                        .append(", 캐릭터: ").append(client.characterName)
+                        .append(", 팀 번호: ").append(client.team).append("\n");
+            }
+
+            // 콘솔 출력
+            System.out.println(playerInfo);
+
+            // 결과 반환
+            return playerInfo.toString();
         }
 
         // 서버 -> 클라이언트로 ChatMsg 전송
