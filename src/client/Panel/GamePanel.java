@@ -915,6 +915,7 @@ public class GamePanel extends JPanel {
     // 다음 맵 준비 및 전환
     private void prepareNextMap() {
         if (isTimerFinished()) {
+
             handleTimerEnd(() -> sendNextMap(level + 1)); // 타이머 종료 처리 후 다음 맵 이동
         } else {
             sendNextMap(level + 1); // 타이머가 종료되지 않은 경우 바로 다음 레벨로 이동
@@ -1006,6 +1007,8 @@ public class GamePanel extends JPanel {
 
     // 아이템 스폰
     public void initializeItem(List<int[]> newItems) {
+        //모든 아이템 제거 후 추가
+        items.clear();
         items.addAll(newItems);
     }
 

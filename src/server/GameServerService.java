@@ -306,6 +306,14 @@ public class GameServerService {
 //            team = msg.getTeam();
             gameMode = msg.getGameMode();
             characterName = msg.getCharacter();
+            //roomName, password, gameMode 입력하지 않으면 방 생성 실패
+            if(roomName.equals("")||password.equals("")||gameMode==0){
+                System.out.println("방 정보를 입력하세요.");
+                send(new ChatMsg.Builder("CREATE_FAIL")
+                        .roomName(roomName)
+                        .build());
+                return;
+            }
             //같은 이름의 방이 있으면 방을 생성하지 못하도록
             for(String room : rooms){
                 if(room.equals(msg.getRoomName())){
