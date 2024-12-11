@@ -17,6 +17,7 @@ public class GameClientService {
     private String serverAddress;
     private int serverPort;
     private String userName;
+    private Boolean isAlreadyCharacter=false; // 이미 선택된 캐릭터인지 확인
 
     public GameClientService(GameClient gameClient, String serverAddress, int serverPort) {
         this.gameClient = gameClient;
@@ -173,6 +174,15 @@ public class GameClientService {
                 gameClient.getGameWithChatPanel().getChatPanel().printDisplay("[" + msg.getNickname() + "]: 이미지 " + msg.getFileName());
                 gameClient.getGameWithChatPanel().getChatPanel().printDisplay(msg.getImage());
             }
+            case "ALREADY_CHARACTER" -> { // 중복된 캐릭터 선택
+                JOptionPane.showMessageDialog(
+                        null,
+                        "이미 선택된 캐릭터입니다. 다른 캐릭터를 선택하세요.",
+                        "캐릭터 선택 중복 경고",
+                        JOptionPane.WARNING_MESSAGE
+                );
+
+            }
             default -> gameClient.printDisplay("알 수 없는 메시지 유형 수신: " + msg.getCode());
         }
     }
@@ -272,9 +282,5 @@ public class GameClientService {
     private void startRoom (ChatMsg msg){
         gameClient.startRoomPanel(this, msg);
         gameClient.printDisplay(msg.getTextMessage());
-    }
-
-    public ObjectOutputStream getOutStream () {
-        return out;
     }
 }

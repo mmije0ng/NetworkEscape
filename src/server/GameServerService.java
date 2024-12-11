@@ -374,9 +374,12 @@ public class GameServerService {
 
                     // 캐릭터 선택 중복 검사
                     if (isCharacterAlready(msg.getCharacter())){
+                        printDisplay("["+roomName+"]: "+nickName+"이 선택한 캐릭터 "+characterName+" 중복");
 
+                        msg.setCode("ALREADY_CHARACTER");
+                        send(msg);
+                        continue;
                     }
-
 
                     addClientToRoom(roomName, this); // 같은 이름의 게임방에 클라이언트 추가
 
@@ -405,7 +408,6 @@ public class GameServerService {
 
             send(new ChatMsg.Builder("ENTER_FAIL")
                     .build());
-
         }
 
         // 대기방 나가기
