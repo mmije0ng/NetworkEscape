@@ -16,6 +16,7 @@ public class GameClientService {
 
     private String serverAddress;
     private int serverPort;
+    private String userName;
 
     public GameClientService(GameClient gameClient, String serverAddress, int serverPort) {
         this.gameClient = gameClient;
@@ -143,12 +144,21 @@ public class GameClientService {
     private void handleChatMessage(ChatMsg msg) {
         switch (msg.getCode()) {
             case "LOGIN_SUCCESS" -> startMain(msg);
-//            case "LOGIN_FAIL" -> 닉네임이 중복된다는 알람
+            case "LOGIN_FAIL" -> JOptionPane.showMessageDialog(
+                    null,        // 부모 컴포넌트 (null일 경우 화면 중앙에 표시)
+                    "사용자 이름 중복",   // 메시지 내용
+                    "로그인 실패",               // 창 제목
+                    JOptionPane.WARNING_MESSAGE // 경고 아이콘 사용
+            );
             case "LOGOUT_SUCCESS" -> gameClient.startLoginPanel(serverAddress, serverPort);
             case "CREATE_SUCCESS" -> startRoom(msg);
-            case "CREATE_FAIL" -> System.out.println("방 생성 실패");
-            case "ENTER_SUCCESS" ->  gameClient.startRoomPanel(this, msg);
-            case "ENTER_OTHER_SUCCESS" -> gameClient.printDisplay(msg.getTextMessage());
+            case "CREATE_FAIL" -> JOptionPane.showMessageDialog(
+                    null,        // 부모 컴포넌트 (null일 경우 화면 중앙에 표시)
+                    "방 정보를 입력해주세요",   // 메시지 내용
+                    "방 생성 실패",               // 창 제목
+                    JOptionPane.WARNING_MESSAGE // 경고 아이콘 사용
+            );
+            case "ENTER_SUCCESS" -> startRoom(msg);
 //            case "ENTER_FAIL" -> 입장 실패시 알람
             case "EXIT_SUCCESS" -> startMain(msg);
             case "START_GAME" -> startGame(msg); // 게임 시작
@@ -263,4 +273,7 @@ public class GameClientService {
         gameClient.printDisplay(msg.getTextMessage());
     }
 
+    public ObjectOutputStream getOutStream () {
+        return out;
+    }
 }
