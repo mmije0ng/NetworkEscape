@@ -133,7 +133,7 @@ public class ResultPanel extends JPanel {
 
                 // 닉네임 라벨
                 JLabel nameLabel = new JLabel("승리 플레이어: " + nickname);
-                nameLabel.setFont(new Font("돋움", Font.BOLD, 16));
+                nameLabel.setFont(new Font("돋움", Font.BOLD, 20));
                 nameLabel.setForeground(Color.WHITE);
                 nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT); // 중앙 정렬
                 individualPanel.add(nameLabel);

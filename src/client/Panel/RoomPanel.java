@@ -20,10 +20,10 @@ public class RoomPanel extends JPanel {
         this.mode = msg.getGameMode();
         this.team = msg.getTeam();
 
-        buildPanel(msg);
+        buildPanel();
     }
 
-    private void buildPanel(ChatMsg msg) {
+    private void buildPanel() {
         setLayout(new BorderLayout());
 
         JPanel infoPanel = new JPanel(new GridLayout(2, 6));

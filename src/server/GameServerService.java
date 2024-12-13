@@ -219,8 +219,7 @@ public class GameServerService {
                             case "TX_STRING" -> handleTextMessage(chatMsg); // 스트링 메시지 (채팅)
                             case "TX_IMAGE" -> handleImageMessage(chatMsg); // 이미지 (채팅)
                             case "TX_FILE" -> handleFileMessage(chatMsg); // 파일 (채팅)
-                            case "JOIN_ROOM" -> handleJoinRoom(chatMsg); // 게임방 입장
-                            case "START_GAME" ->checkStartCondition(); // 게임 시작
+                            case "START_GAME" -> handleGameStart(chatMsg); // 게임 시작 요청
                             default -> printDisplay("알 수 없는 메시지 유형: " + chatMsg.getCode());
                         }
                     }
@@ -339,7 +338,7 @@ public class GameServerService {
                     .roomName(roomName)
                     .password(password)
                     .team(team)
-                    .textMessage("["+msg.getRoomName()+"] 의 새로운 참가자 입장, 닉네임: "+msg.getNickname()+", 캐릭터: "+msg.getCharacter())
+                    .textMessage("["+roomName+"] 의 새로운 참가자 입장, 닉네임: "+nickName+", 캐릭터: "+characterName)
                     .build()
             );
             rooms.add(roomName);
@@ -378,17 +377,21 @@ public class GameServerService {
 
                         msg.setCode("ALREADY_CHARACTER");
                         send(msg);
-                        continue;
+                        return;
                     }
 
                     addClientToRoom(roomName, this); // 같은 이름의 게임방에 클라이언트 추가
+
+                    // 로그인 시 gameMode가 default 1이 때문에 로비 리스트가 업데이트 되면서 gameMode가 2인 로비가 1로 변경됨
+                    // gameMode를 user.gameMode로 변경하여 해결
+                    gameMode = user.gameMode;
 
                     printDisplay("새로운 참가자 enter");
                     printDisplay("roomName: "+roomName+", "+", nickName: "+nickName+", gameMode: "+gameMode+", team: "+team);
 
                     ChatMsg chatMsg = new ChatMsg.Builder("ENTER_SUCCESS")
                             .nickname(nickName)
-                            .gameMode(user.gameMode)    //생성한 방의 게임모드
+                            .gameMode(gameMode)    //생성한 방의 게임모드
                             .character(characterName)
                             .roomName(roomName)
                             .team(team)
@@ -396,9 +399,8 @@ public class GameServerService {
                             .textMessage("["+msg.getRoomName()+"] 의 새로운 참가자 입장, 닉네임: "+msg.getNickname()+" 캐릭터: "+msg.getCharacter())
                             .build();
 
-                    send(chatMsg);
+                    broadcastToRoom(roomName, chatMsg);
 
-                    chatMsg.setCode("ENTER_OTHER_SUCCESS");
                     chatMsg.setTextMessage(printAllRoomPlayers(roomName));
                     broadcastToRoom(roomName, chatMsg);
 
@@ -423,7 +425,7 @@ public class GameServerService {
                 rooms.remove(roomName);
             }
 
-            broadcastAllUpdatedRoom(rooms, gameMode);
+            broadcastAllUpdatedRoom(rooms, msg.getGameMode());
             printDisplay("[" + roomName + "] " + nickName + " 퇴장");
         }
 
@@ -487,17 +489,9 @@ public class GameServerService {
             }
         }
 
-//      게임 대기방 입장
-        private void handleJoinRoom(ChatMsg msg) {
-//            roomName = msg.getRoomName();
-//            gameMode = msg.getGameMode();
-//            team = msg.getTeam();
-//            characterName = msg.getNickname();
-//            nickName = msg.getNickname();
-
-//            addClientToRoom(roomName, this); // 같은 이름의 게임방에 클라이언트 충가
-
-            System.out.println("handleJoinRoom, mode: "+msg.getGameMode());
+        // 게임 시작 요청
+        private void handleGameStart(ChatMsg msg) {
+            System.out.println("handleGameStart, mode: "+msg.getGameMode());
 
             checkStartCondition(); // 게임이 시작 가능한지 체크
         }
@@ -661,7 +655,7 @@ public class GameServerService {
         }
 
         // 클라이언트로부터 받은 GameMsg 객체를 같은 방의 유저들에게 전송
-        // code: JUMP, MOVE, NEXT_MAP(level 3까지), DOOR
+        // code: JUMP, MOVE, FALL, NEXT_MAP(level 3까지), DOOR
         private void handleGameMsg(GameMsg msg) {
             broadcastToRoom(msg.getRoomName(), msg);
         }
@@ -692,7 +686,7 @@ public class GameServerService {
                     }
                 }
 
-                for(ClientHandler client: roomUsers){
+                for (ClientHandler client: roomUsers) {
                     GameMsg gameMsg = new GameMsg.Builder("RESULT")
                             .roomName(client.roomName)
                             .nickname(client.nickName)
@@ -707,7 +701,6 @@ public class GameServerService {
                     client.send(gameMsg);
                 }
 
-
             }
 
             else handleGameMsg(msg);
@@ -720,7 +713,6 @@ public class GameServerService {
 
             printDisplay("게임 결과");
             teamScores.forEach((team, score) -> printDisplay("Team: " + team + ", Score: " + score));
-
 
             // 점수 맵에서 가장 높은 점수를 가진 팀 찾기
             return teamScores.entrySet().stream()
@@ -739,7 +731,7 @@ public class GameServerService {
             }
 
             // StringBuilder로 플레이어 정보 생성
-            StringBuilder playerInfo = new StringBuilder("[" + roomName + "] 의 플레이어 목록\n");
+            StringBuilder playerInfo = new StringBuilder("\n[" + roomName + "] 의 플레이어 목록\n");
             for (ClientHandler client : roomUsers) {
                 playerInfo.append("닉네임: ").append(client.nickName)
                         .append(", 캐릭터: ").append(client.characterName)
