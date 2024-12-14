@@ -16,7 +16,8 @@ public class GameClientService {
 
     private String serverAddress;
     private int serverPort;
-    private String userName;
+    private String nickName;
+    private Boolean isAlreadyCharacter=false; // 이미 선택된 캐릭터인지 확인
 
     public GameClientService(GameClient gameClient, String serverAddress, int serverPort) {
         this.gameClient = gameClient;
@@ -158,22 +159,36 @@ public class GameClientService {
                     "방 생성 실패",               // 창 제목
                     JOptionPane.WARNING_MESSAGE // 경고 아이콘 사용
             );
-            case "ENTER_SUCCESS" ->  gameClient.startRoomPanel(this, msg);
-            case "ENTER_OTHER_SUCCESS" -> gameClient.printDisplay(msg.getTextMessage());
-//            case "ENTER_FAIL" -> 입장 실패시 알람
+            case "ENTER_SUCCESS" ->  {
+                if(msg.getNickname().equals(nickName))
+                    gameClient.startRoomPanel(this, msg);
+                gameClient.printDisplay(msg.getTextMessage());
+            }
+            case "ENTER_FAIL" -> JOptionPane.showMessageDialog(
+                    null,        // 부모 컴포넌트 (null일 경우 화면 중앙에 표시)
+                    "대기방 입장에 실패하였습니다.",   // 메시지 내용
+                    "방 입장 실패",               // 창 제목
+                    JOptionPane.WARNING_MESSAGE // 경고 아이콘 사용
+            );
             case "EXIT_SUCCESS" -> startMain(msg);
             case "START_GAME" -> startGame(msg); // 게임 시작
             case "UPDATE_ROOMLIST" -> gameClient.printRoom(msg);
             case "WAITING" -> gameClient.printDisplay("게임 시작 대기 중입니다..."); // 게임 대기
-            case "TX_STRING" ->
-                    gameClient.getGameWithChatPanel().getChatPanel().printDisplay("[" + msg.getNickname() + "]: " + msg.getTextMessage()); // 텍스트 채팅 메시지
-            case "TX_FILE" ->
-                    gameClient.getGameWithChatPanel().getChatPanel().printDisplay("[" + msg.getNickname() + "] 파일: " + msg.getFileName() + " (" + msg.getFileSize() + " bytes)"); // 파일 채팅 메시지
+            case "TX_STRING" -> gameClient.getGameWithChatPanel().getChatPanel().printDisplay("[" + msg.getNickname() + "]: " + msg.getTextMessage()); // 텍스트 채팅 메시지
+            case "TX_FILE" -> gameClient.getGameWithChatPanel().getChatPanel().printDisplay("[" + msg.getNickname() + "] 파일: " + msg.getFileName() + " (" + msg.getFileSize() + " bytes)"); // 파일 채팅 메시지
             case "TX_IMAGE" -> { // 이미지 채팅 메시지
                 gameClient.getGameWithChatPanel().getChatPanel().printDisplay("[" + msg.getNickname() + "]: 이미지 " + msg.getFileName());
                 gameClient.getGameWithChatPanel().getChatPanel().printDisplay(msg.getImage());
             }
-            default -> gameClient.printDisplay("알 수 없는 메시지 유형 수신: " + msg.getCode());
+            case "ALREADY_CHARACTER" -> { // 중복된 캐릭터 선택
+                JOptionPane.showMessageDialog(
+                        null,
+                        "이미 선택된 캐릭터입니다. 다른 캐릭터를 선택하세요.",
+                        "캐릭터 선택 중복 경고",
+                        JOptionPane.WARNING_MESSAGE
+                );
+            }
+//            default -> gameClient.printDisplay("수신 메시지 유형: " + msg.getCode());
         }
     }
 
@@ -242,8 +257,8 @@ public class GameClientService {
     }
 
     // 게임 시작 요청
-    public void requestStartGame (String nickName, String roomName, String characterName,int mode, int team){
-        ChatMsg chatMsg = new ChatMsg.Builder("JOIN_ROOM")
+    public void requestStartGame (String roomName, String nickName, String characterName,int mode, int team){
+        ChatMsg chatMsg = new ChatMsg.Builder("START_GAME")
                 .nickname(nickName)
                 .roomName(roomName)
                 .character(characterName)
@@ -251,7 +266,7 @@ public class GameClientService {
                 .team(team)
                 .build();
 
-        System.out.println("JOIN_ROOM, roomName: " + roomName + ", gameMode: " + mode);
+        System.out.println("Client START_GAME 요청, roomName: " + roomName + ", gameMode: " + mode);
 
         send(chatMsg); // 서버로 메시지 전송
     }
@@ -265,6 +280,7 @@ public class GameClientService {
     //메인화면
     private void startMain (ChatMsg msg){
         System.out.println("메인화면 시작");
+        nickName = msg.getNickname();
         gameClient.startMainPanel(this, msg);
     }
 
@@ -272,9 +288,5 @@ public class GameClientService {
     private void startRoom (ChatMsg msg){
         gameClient.startRoomPanel(this, msg);
         gameClient.printDisplay(msg.getTextMessage());
-    }
-
-    public ObjectOutputStream getOutStream () {
-        return out;
     }
 }

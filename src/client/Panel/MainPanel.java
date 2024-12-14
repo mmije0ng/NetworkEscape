@@ -15,12 +15,7 @@ public class MainPanel extends JPanel{
     public JTextField t_lobbyName,t_lobbyPassword;
     public JPanel lobbyListPanel;
     public JButton b_playMode1, b_playMode2, b_createLobby, b_logout,b_enterLobby;
-
-//    public JButton blueCharacter1,blueCharacter2,blueCharacter3;
-//    public JButton redCharacter1,redCharacter2,redCharacter3;
-//    private DefaultStyledDocument document;
     private GameClientService service;
-
     private int playmode=0;
     private String userName;
 
@@ -251,8 +246,9 @@ public class MainPanel extends JPanel{
 
         // 버튼 클릭 이벤트
         button.addActionListener(e -> {
-            System.out.println("선택된 캐릭터: " + e.getActionCommand());
-            selectedCharacter = e.getActionCommand(); // 선택된 캐릭터 이름 저장
+            // 서버에 선택된 캐릭터 전달 및 중복 확인 요청
+            selectedCharacter = e.getActionCommand();
+            System.out.println("선택된 캐릭터: " + selectedCharacter);
         });
 
         return button;
@@ -286,6 +282,7 @@ public class MainPanel extends JPanel{
                                     selectedCharacter, // 선택된 캐릭터
                                     msg.getGameMode() // 선택된 플레이 모드
                             );
+
                         } else {
                             JOptionPane.showMessageDialog(
                                     lobbyListPanel,
@@ -297,7 +294,7 @@ public class MainPanel extends JPanel{
                     }
 
                 });
-                System.out.println("로비리스트 업데이트: " + room +", 게임모드: "+msg );
+                System.out.println("로비리스트 업데이트: " + room +", 게임모드: "+msg.getGameMode() );
                 roomPanel.add(t_roomName, BorderLayout.CENTER);
                 roomPanel.add(b_enter, BorderLayout.EAST);
                 lobbyListPanel.add(roomPanel);
