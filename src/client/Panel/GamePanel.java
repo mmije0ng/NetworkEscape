@@ -560,28 +560,51 @@ public class GamePanel extends JPanel {
 
     // 플레이어가 블록 위에 서 있지 않은 경우 하강
     private void applyGravity() {
+//        if (!isFalling && !isJumping) {
+//            new Thread(() -> {
+//                try {
+//                    isFalling = true;
+//                    while (!isStandingOnBlock(playerX, playerY)) {
+//                        int newY = playerY + 2; // 낙하 속도
+//                        if (newY + 40 >= getHeight()) { // 화면 바닥에 닿으면 멈춤
+//                            playerY = getHeight() - 40; // 바닥 위로 위치 고정
+//                            break;
+//                        }
+//                        playerY = newY;
+//
+//                        sendPlayerPosition("FALL", playerX, playerY); // 서버에 낙하 정보 전송
+//                        repaint();
+//
+//                        processKeys(); // 중력 중에도 키 입력 처리
+//                        Thread.sleep(7); // 낙하 속도 조정 8
+//                    }
+//                } catch (InterruptedException e) {
+//                    Thread.currentThread().interrupt();
+//                } finally {
+//                    isFalling = false; // 낙하 상태 해제
+//                }
+//            }).start();
+//        }
         if (!isFalling && !isJumping) {
             new Thread(() -> {
                 try {
                     isFalling = true;
                     while (!isStandingOnBlock(playerX, playerY)) {
-                        int newY = playerY + 2; // 낙하 속도
-                        if (newY + 40 >= getHeight()) { // 화면 바닥에 닿으면 멈춤
-                            playerY = getHeight() - 40; // 바닥 위로 위치 고정
+                        int newY = playerY + 2;
+                        if (newY + 40 >= getHeight()) {
+                            playerY = getHeight() - 40;
                             break;
                         }
                         playerY = newY;
 
-                        sendPlayerPosition("FALL", playerX, playerY); // 서버에 낙하 정보 전송
+                        sendPlayerPosition("FALL", playerX, playerY);
                         repaint();
-
-                        processKeys(); // 중력 중에도 키 입력 처리
-                        Thread.sleep(7); // 낙하 속도 조정 8
+                        Thread.sleep(7);
                     }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 } finally {
-                    isFalling = false; // 낙하 상태 해제
+                    isFalling = false;
                 }
             }).start();
         }
@@ -603,16 +626,32 @@ public class GamePanel extends JPanel {
 
     // 플레이어가 블록에 충돌했는지 체크
     private boolean isCollidesWithBlock(int x, int y) {
+//        List<int[]> levelBlocks = blockMap.get(level);
+//        if (levelBlocks == null) return false; // 현재 레벨의 블록이 없다면 return false
+//
+//        for (int[] block : levelBlocks) {
+//            int bx = block[0], by = block[1], bWidth = block[2], bHeight = block[3];
+//            if (x + 40 > bx && x < bx + bWidth && y + 40 > by && y < by + bHeight) {
+//                return true; // 충돌이 발생한 경우
+//            }
+//        }
+//        return false; // 충돌하지 않은 경우
         List<int[]> levelBlocks = blockMap.get(level);
-        if (levelBlocks == null) return false; // 현재 레벨의 블록이 없다면 return false
+        if (levelBlocks == null) return false;
 
         for (int[] block : levelBlocks) {
             int bx = block[0], by = block[1], bWidth = block[2], bHeight = block[3];
-            if (x + 40 > bx && x < bx + bWidth && y + 40 > by && y < by + bHeight) {
-                return true; // 충돌이 발생한 경우
+            boolean horizontalOverlap = x + 40 > bx && x < bx + bWidth;
+            boolean verticalOverlap = y + 40 > by && y < by + bHeight;
+
+            // 충돌 조건
+            if (horizontalOverlap && verticalOverlap) {
+                // 머리 위 블록 충돌 방지
+                if (y < by && (y + 40) <= by) continue;
+                return true;
             }
         }
-        return false; // 충돌하지 않은 경우
+        return false;
     }
 
     public void stopMove(int team){
@@ -646,14 +685,14 @@ public class GamePanel extends JPanel {
                     int newY = playerY - jumpSpeed;
                     if (!isCollidesWithBlock(playerX, newY)) {
                         playerY = newY;
-                        
+
                         // 서버로 현재 플레이어의 위치와 JUMP 코드 전송
                         sendPlayerPosition("JUMP", playerX, playerY);
                         repaint();
                     }
                     Thread.sleep(5);
                 }
-                
+
                 // 하강 단계
                 for (int i = 0; i < jumpHeight / jumpSpeed; i++) {
                     int newY = playerY + jumpSpeed;
@@ -666,11 +705,12 @@ public class GamePanel extends JPanel {
                     Thread.sleep(5);
                 }
 
-                applyGravity(); // 점프 후 중력 적용
+//                applyGravity(); // 점프 후 중력 적용
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } finally {
                 isJumping = false;
+                applyGravity(); // 점프 후 중력 적용
             }
         }).start();
     }
