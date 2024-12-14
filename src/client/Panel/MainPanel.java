@@ -294,7 +294,7 @@ public class MainPanel extends JPanel{
                     }
 
                 });
-                System.out.println("로비리스트 업데이트: " + room +", 게임모드: "+msg );
+                System.out.println("로비리스트 업데이트: " + room +", 게임모드: "+msg.getGameMode() );
                 roomPanel.add(t_roomName, BorderLayout.CENTER);
                 roomPanel.add(b_enter, BorderLayout.EAST);
                 lobbyListPanel.add(roomPanel);

@@ -95,7 +95,7 @@ public class GameClient extends JFrame {
         revalidate();
         repaint();
 
-        System.out.println("startRoomPanel msg code: "+msg.getCode()+", characterName: "+msg.getCharacter()+", team: "+msg.getTeam());
+        System.out.println("startRoomPanel msg code: "+msg.getCode()+", characterName: "+msg.getCharacter()+", team: "+msg.getTeam()+", mode: "+msg.getGameMode());
     }
 
    // NEXT_MAP 메시지를 받아 로딩 화면 표시
