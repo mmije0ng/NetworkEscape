@@ -9,8 +9,7 @@ import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
 import java.awt.*;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.Stack;
 
 public class GameClient extends JFrame {
@@ -31,7 +30,7 @@ public class GameClient extends JFrame {
 
         gameClientService = new GameClientService(this, serverAddress, serverPort);
 //        gameStartPanel = new GameStartPanel(gameClientService);
-        loginPanel = new LoginPanel(gameClientService, serverAddress, serverPort);
+        loginPanel = new LoginPanel(gameClientService, gameClientService.getServerAddress(), gameClientService.getServerPort());
         roomPanel = new RoomPanel(gameClientService, new ChatMsg.Builder("").build());
         mainPanel = new MainPanel(gameClientService, "");
 
@@ -179,7 +178,6 @@ public class GameClient extends JFrame {
     public GameWithChatPanel getGameWithChatPanel() {
         return gameWithChatPanel;
     }
-    public MainPanel getMainPanel() {return mainPanel;}
 
     // 게임 결과 패널
     public void startResultPanel(GameMsg msg, ObjectOutputStream out) {
@@ -223,10 +221,10 @@ public class GameClient extends JFrame {
         timer.start();
     }
 
-
     public static void main(String[] args) {
         String serverAddress = "localhost";
         int serverPort = 54321;
+
         new GameClient(serverAddress, serverPort);
     }
 }

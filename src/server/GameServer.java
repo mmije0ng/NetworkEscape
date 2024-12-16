@@ -2,15 +2,17 @@ package server;
 
 import javax.swing.*;
 import java.awt.*;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 public class GameServer extends JFrame {
     private GameServerService serverService; // 서버 로직
     private ServerPanel serverPanel; // 서버 패널
 
-    public GameServer(int port) {
+    public GameServer(String ipAddress, int port) {
         super("Game Server");
 
-        serverService = new GameServerService(port);
+        serverService = new GameServerService(ipAddress, port);
         serverPanel = new ServerPanel(serverService);
 
         buildGUI();
@@ -27,8 +29,10 @@ public class GameServer extends JFrame {
         add(serverPanel.createControlPanel(), BorderLayout.SOUTH);
     }
 
-    public static void main(String[] args) {
-        int port = 54321;
-        new GameServer(port);
+    public static void main(String[] args) throws UnknownHostException {
+        String ipAddress = InetAddress.getLocalHost().getHostAddress(); // 기본 ip 주소
+        int port = 54321; // 기본 포트
+
+        new GameServer(ipAddress, port);
     }
 }

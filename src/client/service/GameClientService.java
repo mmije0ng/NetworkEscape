@@ -17,49 +17,32 @@ public class GameClientService {
     private String serverAddress;
     private int serverPort;
     private String nickName;
-    private Boolean isAlreadyCharacter=false; // 이미 선택된 캐릭터인지 확인
 
     public GameClientService(GameClient gameClient, String serverAddress, int serverPort) {
         this.gameClient = gameClient;
         this.serverAddress = serverAddress;
         this.serverPort = serverPort;
+
+        setServerConfig();
     }
 
-    // 서버로 연결 요청
-    public void createRoom(String nickName, String roomName, String password, String characterName, int mode) {
-        System.out.println("GameClientService createRoom characterName: " + characterName);
+    private void setServerConfig(){
+        String text = null;
 
-        if (characterName == null) {
-            JOptionPane.showMessageDialog(
-                    null,        // 부모 컴포넌트 (null일 경우 화면 중앙에 표시)
-                    "게임 캐릭터를 선택해 주세요",   // 메시지 내용
-                    "캐릭터 미선택",               // 창 제목
-                    JOptionPane.WARNING_MESSAGE // 경고 아이콘 사용
-            );
-            return;
+        // server.txt에서 서버 설정 읽기
+        try (BufferedReader br = new BufferedReader(new FileReader("server.txt"))) {
+            serverAddress = br.readLine(); // 첫 번째 줄 ip 주소
+            serverPort = Integer.parseInt(br.readLine()); // 두 번째 줄 포트 번호
+
+            text = "클라이언트 시작, 서버 ip: " + serverAddress + ", 포트번호: " + serverPort;
+            System.out.println(text);
+        } catch (IOException e) {
+            text = "server.txt 파일을 읽을 수 없어 기본 설정을 사용.\n클라이언트 시작, 서버 ip: " + serverAddress + ", 포트번호: " + serverPort;
+            System.err.println(text);
         }
-
-        // 서버로 LOGIN 코드 전송
-        sendCreate(nickName, roomName, password, characterName, mode, 1);
     }
 
-    public void enterRoom(String nickName, String roomName, String password, String characterName, int mode) {
-        System.out.println("GameClientService enterRoom characterName: " + characterName);
-
-        if (characterName == null) {
-            JOptionPane.showMessageDialog(
-                    null,        // 부모 컴포넌트 (null일 경우 화면 중앙에 표시)
-                    "게임 캐릭터를 선택해 주세요",   // 메시지 내용
-                    "캐릭터 미선택",               // 창 제목
-                    JOptionPane.WARNING_MESSAGE // 경고 아이콘 사용
-            );
-            return;
-        }
-
-        sendEnter(nickName, roomName, password, characterName, mode);
-    }
-
-    //유저 로그인 - 로비 생성 화면으로 이동
+    // 유저 로그인 - 로비 생성 화면으로 이동
     public void connectToServer(String serverAddress, int serverPort, String userName) {
         try {
             System.out.println("connectToServer : " + userName);
@@ -75,8 +58,6 @@ public class GameClientService {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-
     }
 
     // 유저 로그아웃 - 로그인 화면으로 이동
@@ -87,6 +68,38 @@ public class GameClientService {
                 .build();
         send(chatMsg);  //서버로 LOGOUT 코드 전송
 
+    }
+
+    // 방 생성
+    public void createRoom(String nickName, String roomName, String password, String characterName, int mode) {
+        System.out.println("GameClientService createRoom characterName: " + characterName);
+        if (!isPlayerSelected(characterName))
+            return;
+
+        sendCreate(nickName, roomName, password, characterName, mode, 1);
+    }
+
+    // 방 참가
+    public void enterRoom(String nickName, String roomName, String password, String characterName, int mode) {
+        System.out.println("GameClientService enterRoom characterName: " + characterName);
+        if (!isPlayerSelected(characterName))
+            return;
+
+        sendEnter(nickName, roomName, password, characterName, mode);
+    }
+
+    // 캐릭터 선택 여부 체크
+    private boolean isPlayerSelected(String characterName){
+        if(characterName!=null)
+            return true;
+
+        JOptionPane.showMessageDialog(
+                null,        // 부모 컴포넌트 (null일 경우 화면 중앙에 표시)
+                "게임 캐릭터를 선택해 주세요",   // 메시지 내용
+                "캐릭터 미선택",               // 창 제목
+                JOptionPane.WARNING_MESSAGE // 경고 아이콘 사용
+        );
+        return false;
     }
 
     //대기방 나가기
@@ -288,5 +301,13 @@ public class GameClientService {
     private void startRoom (ChatMsg msg){
         gameClient.startRoomPanel(this, msg);
         gameClient.printDisplay(msg.getTextMessage());
+    }
+
+    public String getServerAddress() {
+        return serverAddress;
+    }
+
+    public int getServerPort() {
+        return serverPort;
     }
 }

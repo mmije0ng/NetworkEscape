@@ -14,6 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 public class GameServerService {
+    private String ipAddress; // 아이피 주소
     private int port; // 포트 번호
     private ServerSocket serverSocket; // 서버 소켓
     private Thread acceptThread = null; // 클라이언트 요청 수락 스레드
@@ -26,19 +27,17 @@ public class GameServerService {
     private Map<String, Map<Integer, Integer>> pointCountMap = new HashMap<>(); // 팀별 점수 관리 맵, (팀, 점수)
     private JTextArea t_display;
 
-    public GameServerService(int port) {
-        this.port = port;
-    }
-
-    public void setDisplayArea(JTextArea t_display) {
-        this.t_display = t_display;
+    public GameServerService(String ipAddress, int port) {
+        this.ipAddress = ipAddress; // 처음 생성 시 localhost 사용
+        this.port = port; // 처음 생성 시 기본 포트 사용
     }
 
     // 서버 시작 메서드
     public void startServer() {
         try {
+            setServerConfig(); // server.txt 에서 ip 주소, 포트 번호 읽어와 설정
             serverSocket = new ServerSocket(port);
-            printDisplay("서버가 시작되었습니다: " + InetAddress.getLocalHost().getHostAddress());
+            printDisplay("서버가 시작되었습니다: " + ipAddress);
 
             acceptThread = new Thread(() -> {
                 while (acceptThread == Thread.currentThread()) {
@@ -61,6 +60,26 @@ public class GameServerService {
 
         } catch (IOException e) {
             printDisplay("서버 시작 중 오류 발생: " + e.getMessage());
+        }
+    }
+
+    private void setServerConfig(){
+        String text = null;
+
+        // server.txt에서 서버 설정 읽기
+        try (BufferedReader br = new BufferedReader(new FileReader("server.txt"))) {
+            ipAddress = br.readLine(); // 첫 번째 줄 ip 주소
+            port = Integer.parseInt(br.readLine()); // 두 번째 줄 포트 번호
+
+            text = "서버 ip: " + ipAddress + ", 포트번호: " + port;
+
+            System.out.println(text);
+            printDisplay(text);
+        } catch (IOException e) {
+            text = "server.txt 파일을 읽을 수 없어 기본 설정을 사용.\n서버 ip: " + ipAddress + ", 포트번호: " + port;
+
+            System.err.println(text);
+            printDisplay(text);
         }
     }
 
@@ -664,6 +683,9 @@ public class GameServerService {
         // code: JUMP, MOVE, FALL, NEXT_MAP(level 3까지), DOOR
         private void handleGameMsg(GameMsg msg) {
             broadcastToRoom(msg.getRoomName(), msg);
+            if(msg.getCode().equals("NEXT_MAP")){
+                printDisplay("[" + roomName + "] 다음 맵으로 이동, 단계: "+msg.getLevel());
+            }
         }
 
         // 다음 맵 이동
@@ -795,4 +817,7 @@ public class GameServerService {
         }
     }
 
+    public void setDisplayArea(JTextArea t_display) {
+        this.t_display = t_display;
+    }
 }
