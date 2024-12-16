@@ -561,7 +561,13 @@ public class GameServerService {
         //움직임 제한하기
         private void limitMove(ClientHandler user, int team){
             if(user.team != team){
-                printDisplay("["+roomName+"] team: "+ this.team + "팀 움직임 제한: ");
+                printDisplay("["+roomName+"] team: "+ this.team + "팀 폭탄 아이템 획득!");
+                if(this.team==1){
+                    printDisplay("["+roomName+"] team: 2팀 움직임 제한");
+                }
+                else{
+                    printDisplay("["+roomName+"] team: 1팀 움직임 제한");
+                }
                 GameMsg gameMsg = new GameMsg.Builder("LIMIT_MOVE")
                         .roomName(roomName)
                         .team(team)
